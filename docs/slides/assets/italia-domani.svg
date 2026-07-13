@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
+  <!-- Italian tricolor ribbon (waving flag style) -->
+  <defs>
+    <clipPath id="ribbonClip">
+      <path d="M5,20 Q15,8 30,15 Q45,22 60,12 Q75,4 95,16
+               L95,42 Q75,52 60,40 Q45,32 30,42 Q15,52 5,46 Z"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#ribbonClip)">
+    <rect x="0"  y="0" width="34" height="60" fill="#008C45"/>
+    <rect x="33" y="0" width="34" height="60" fill="#FFFFFF"/>
+    <rect x="66" y="0" width="34" height="60" fill="#CD212A"/>
+  </g>
+  <!-- subtle outline -->
+  <path d="M5,20 Q15,8 30,15 Q45,22 60,12 Q75,4 95,16
+           L95,42 Q75,52 60,40 Q45,32 30,42 Q15,52 5,46 Z"
+        fill="none" stroke="#666" stroke-width="0.4" opacity="0.4"/>
+</svg>

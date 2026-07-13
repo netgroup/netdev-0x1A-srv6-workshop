@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<!--
+  SRv6 Workshop @ Netdev 0x1A — Talk 1: Workshop Introduction
+  Self-contained Reveal.js deck (offline: Reveal vendored in ../assets/reveal/).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SRv6 Workshop — Introduction — Netdev 0x1A</title>
+
+<link rel="stylesheet" href="../assets/reveal/reveal.css">
+<link rel="stylesheet" href="../assets/reveal/theme/white.css" id="theme">
+
+<style>
+  :root {
+    --c-primary:   #078052;   /* Tor Vergata green */
+    --c-primary-d: #045a3a;
+    --c-primary-l: #d1fae5;
+    --c-accent:    #d97706;   /* warm orange */
+    --c-good:      #047857;
+    --c-bad:       #b91c1c;
+    --c-muted:     #6b7280;
+    --c-soft:      #e5e7eb;
+    --c-bg-soft:   #f3f4f6;
+  }
+  .reveal { font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 40px; }
+  .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+    font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: var(--c-primary); text-transform: none; letter-spacing: -0.01em; }
+  .reveal h2 { font-size: 1.5em; margin: 0 0 0.4em; }
+  .reveal h3 { font-size: 1.1em; }
+  .reveal section { text-align: left; }
+  .reveal section.center { text-align: center; }
+  .reveal ul, .reveal ol { font-size: 0.78em; line-height: 1.4; margin: 0.3em 0; padding-left: 1.2em; }
+  .reveal li { margin: 0.15em 0; }
+  .reveal p { font-size: 0.85em; line-height: 1.4; margin: 0.3em 0; }
+  .reveal code { font-family: "Consolas","Menlo",monospace; font-size: 0.85em;
+                 background: var(--c-bg-soft); padding: 1px 4px; border-radius: 3px; color: #111; }
+  .accent { color: var(--c-accent); font-weight: 600; }
+  .good { color: var(--c-good); font-weight: 600; }
+  .bad  { color: var(--c-bad);  font-weight: 600; }
+  .primary { color: var(--c-primary); font-weight: 600; }
+  .muted { color: var(--c-muted); }
+  .footer { position: fixed; bottom: 8px; left: 16px; font-size: 11px; color: var(--c-muted); z-index: 50; }
+  .footer .sep { margin: 0 6px; color: var(--c-soft); }
+  #pdfBtn { position: fixed; bottom: 10px; right: 14px; z-index: 60; cursor: pointer;
+            font: 600 13px/1 "Segoe UI", Arial, sans-serif; color: #fff; background: var(--c-primary);
+            border: none; border-radius: 5px; padding: 8px 12px; opacity: .82; }
+  #pdfBtn:hover { opacity: 1; }
+  @media print { .footer, #pdfBtn { display: none !important; } }
+  .part-banner { display: inline-block; background: var(--c-primary); color: #fff;
+    padding: 5px 14px; border-radius: 3px; font-size: 0.5em; letter-spacing: 0.15em;
+    text-transform: uppercase; margin-bottom: 0.5em; }
+  /* === TITLE SLIDE SCOPED FONT BASE === */
+  .reveal .title-slide { font-size: 32px; }
+  .title-slide .part-banner { font-size: 0.7em; padding: 7px 18px; margin: 0.6em 0; }
+  .title-slide h1 { font-size: 2.5em; line-height: 1.15; margin: 0.4em 0 0.5em; }
+  .title-slide .authors { font-size: 0.95em; color: #222; line-height: 1.55; margin: 0.4em 0; }
+  .title-slide .venue { font-size: 0.78em; color: var(--c-muted); margin: 1em 0 0.4em; line-height: 1.5; }
+  .title-slide .logo-strip { display: flex; justify-content: center; align-items: center; gap: 32px; margin-bottom: 0.4em; }
+  .title-slide .logo-strip img { height: 130px; width: auto; }
+  /* === FILL: canvas-filling, vertically centered content ===
+     Reveal.js writes `display:block` as an INLINE style on every <section> from JS, so putting
+     `display:flex` on the section itself does not work (and forcing it with !important breaks
+     Reveal's own slide hiding: past/future slides start bleeding through).
+     The reliable pattern is an INNER wrapper: the section stays a plain Reveal block, and
+     `.fillbox` is the flex column that fills its 100% height. Keep it. */
+  .reveal .slides > section.fill { height: 100%; }
+  .reveal .slides > section.fill > .fillbox {
+    height: 100%; display: flex; flex-direction: column; justify-content: center; }
+  .fillbox > h2 { margin-bottom: 0.6em; }
+  /* compact variant: slides carrying four message boxes */
+  .fill.compact .msg-box { padding: 15px 26px; margin: 9px 0; font-size: 0.86em; }
+  table.cmp { font-size: 0.7em; border-collapse: collapse; margin: 0.4em auto; width: 100%; }
+  table.cmp th, table.cmp td { border: 1px solid var(--c-soft); padding: 6px 9px; vertical-align: top; }
+  table.cmp th { background: var(--c-primary); color: #fff; text-align: left; font-weight: 600; }
+  table.cmp td.row-label { background: var(--c-bg-soft); font-weight: 600; }
+  table.cmp tr.highlight td { background: #fef3c7; }
+  /* agenda table: 9 rows, needs a tighter scale */
+  table.agenda { font-size: 0.52em; border-collapse: collapse; width: 100%; margin: 0.2em auto; }
+  table.agenda th, table.agenda td { border: 1px solid var(--c-soft); padding: 7px 10px; vertical-align: middle; }
+  table.agenda th { background: var(--c-primary); color: #fff; text-align: left; font-weight: 600; }
+  table.agenda td.t { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; color: var(--c-primary); width: 15%; }
+  table.agenda td.w { white-space: nowrap; color: var(--c-muted); width: 27%; }
+  table.agenda td.title { white-space: nowrap; }
+  table.agenda tr.mine td { background: #fef3c7; }
+  table.agenda tr.mine td.t { color: var(--c-accent); }
+  .two-col { display: flex; gap: 18px; align-items: flex-start; }
+  .two-col > div { flex: 1; min-width: 0; }
+  .two-col svg.figure { width: 100%; height: auto; max-height: 620px; }
+  .msg-box { border-left: 8px solid var(--c-primary); background: #fafafa; padding: 22px 28px; border-radius: 4px;
+    margin: 12px 0; font-size: 0.95em; line-height: 1.4; display: flex; gap: 22px; align-items: center; }
+  .msg-box .msg-num { font-size: 1.6em; font-weight: 800; color: var(--c-primary); line-height: 1; min-width: 1.3em; text-align: center; }
+  .msg-box .msg-body strong { color: var(--c-primary); font-size: 1.15em; display: block; margin-bottom: 4px; }
+  .msg-box--accent { border-left-color: var(--c-accent); }
+  .msg-box--accent .msg-num { color: var(--c-accent); }
+  .msg-box--accent .msg-body strong { color: var(--c-accent); }
+  .msg-box .edition { font-size: 0.85em; font-weight: 800; letter-spacing: -0.02em; min-width: 3.6em; }
+  .takeaway { background: #fef3c7; border-left: 4px solid var(--c-accent); padding: 9px 13px; font-size: 0.78em;
+    margin-top: 0.5em; border-radius: 3px; }
+  .takeaway strong { color: var(--c-accent); }
+  .box { border: 1px solid var(--c-soft); border-radius: 4px; padding: 18px 22px; font-size: 0.85em; background: #fafafa; }
+  svg.figure { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .reveal section .one-line li { white-space: nowrap; }
+  svg text { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+</style>
+</head>
+<body>
+
+<div class="footer">
+  <span>Stefano Salsano</span><span class="sep">|</span>
+  <span>SRv6 Workshop &mdash; Introduction</span><span class="sep">|</span>
+  <span>Netdev 0x1A &mdash; Rome 2026</span>
+</div>
+
+<button id="pdfBtn" title="Open the print-ready layout, then choose Save as PDF (enable Background graphics)" onclick="location.search='print-pdf&autoprint=1'">Save as PDF</button>
+
+<div class="reveal"><div class="slides">
+
+<!-- ===== 1. TITLE SLIDE (the only non-fill slide) ===== -->
+<section class="title-slide center">
+  <div class="logo-strip">
+    <img src="../assets/tor-vergata-logo.png" alt="University of Rome Tor Vergata">
+    <img src="../assets/cnit-logo.png" alt="CNIT">
+  </div>
+  <div><span class="part-banner">SRv6 Workshop @ Netdev 0x1A</span></div>
+  <h1>SRv6 Workshop<br><span class="accent">Introduction</span></h1>
+  <div class="authors">
+    <strong>Stefano Salsano</strong><sup>1,2</sup><br>
+    <span class="muted"><sup>1</sup>University of Rome Tor Vergata, Italy &nbsp;&middot;&nbsp; <sup>2</sup>CNIT, Italy</span>
+  </div>
+  <div class="venue">
+    <strong style="color:#222;">Netdev 0x1A &mdash; The Technical Conference on Linux Networking</strong><br>
+    SRv6 Workshop &mdash; <em>13 July 2026, Rome, Italy</em>
+  </div>
+</section>
+
+<!-- ===== 2. SRv6 IN ONE SLIDE ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <h2>SRv6 in one slide</h2>
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <ul class="one-line">
+        <li><strong>A program in the packet header</strong> (RFC 8986)</li>
+        <li>A <strong>segment</strong> is an <span class="primary">instruction</span>, not just a location</li>
+        <li><strong>Linux</strong>: <code>seg6</code> since kernel 4.10 &mdash; 2017</li>
+        <li><strong>Ecosystem</strong>: FRR, SONiC, Cilium, VPP</li>
+        <li>No new dataplane: it is <strong>plain IPv6</strong></li>
+      </ul>
+      <div class="takeaway" style="margin-top: 1.4em;">
+        <strong>Why here.</strong> SRv6 is where the network design meets the <em>kernel datapath</em>.
+      </div>
+    </div>
+    <div>
+      <svg class="figure" viewBox="0 0 700 500" xmlns="http://www.w3.org/2000/svg">
+        <g font-size="22">
+          <!-- IPv6 header -->
+          <rect x="20" y="20" width="660" height="60" rx="6" fill="#f3f4f6" stroke="#6b7280" stroke-width="2"/>
+          <text x="350" y="57" text-anchor="middle" font-weight="600">IPv6 header</text>
+          <text x="40" y="105" font-size="19" fill="#6b7280">DA = active segment</text>
+
+          <!-- SRH -->
+          <rect x="20" y="125" width="660" height="215" rx="6" fill="#d1fae5" stroke="#078052" stroke-width="2.5"/>
+          <text x="350" y="162" text-anchor="middle" font-weight="700" fill="#078052">Segment Routing Header (SRH)</text>
+
+          <rect x="45" y="185" width="190" height="58" rx="5" fill="#fff" stroke="#078052" stroke-width="2"/>
+          <text x="140" y="212" text-anchor="middle" font-size="20" font-weight="600">Segment[2]</text>
+          <text x="140" y="234" text-anchor="middle" font-size="17" fill="#6b7280">End</text>
+
+          <rect x="255" y="185" width="190" height="58" rx="5" fill="#fff" stroke="#078052" stroke-width="2"/>
+          <text x="350" y="212" text-anchor="middle" font-size="20" font-weight="600">Segment[1]</text>
+          <text x="350" y="234" text-anchor="middle" font-size="17" fill="#6b7280">End.X</text>
+
+          <rect x="465" y="185" width="190" height="58" rx="5" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="560" y="212" text-anchor="middle" font-size="20" font-weight="600">Segment[0]</text>
+          <text x="560" y="234" text-anchor="middle" font-size="16" fill="#92400e">End.DT4 / End.DT2U</text>
+
+          <text x="350" y="285" text-anchor="middle" font-size="20" fill="#065f46">the path <tspan font-weight="700">and</tspan> the service, in the header</text>
+          <text x="350" y="318" text-anchor="middle" font-size="19" fill="#6b7280">Segments Left &rarr; next instruction</text>
+
+          <!-- payload -->
+          <rect x="20" y="360" width="660" height="60" rx="6" fill="#f3f4f6" stroke="#6b7280" stroke-width="2"/>
+          <text x="350" y="397" text-anchor="middle" font-weight="600">Payload (IPv4 / IPv6 / Ethernet)</text>
+          <text x="350" y="455" text-anchor="middle" font-size="19" fill="#d97706" font-weight="600">Ethernet payload &rarr; the L2 talk of this workshop</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 3. A NETDEV TRADITION ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <h2>A netdev tradition</h2>
+  <div class="msg-box">
+    <div class="msg-num edition">0x16</div>
+    <div class="msg-body"><strong>Lisbon, 2022.</strong> First SRv6 workshop: the kernel implementation, seg6local behaviors, the early ecosystem.</div>
+  </div>
+  <div class="msg-box">
+    <div class="msg-num edition">0x19</div>
+    <div class="msg-body"><strong>Zagreb, 2025.</strong> SRv6 goes production: FRR, SONiC, uSID, deployments at scale.</div>
+  </div>
+  <div class="msg-box msg-box--accent">
+    <div class="msg-num edition">0x1A</div>
+    <div class="msg-body"><strong>Rome, 2026.</strong> Three directions that hit the datapath &mdash; and the gaps we still have to close.</div>
+  </div>
+  <div class="takeaway" style="margin-top: 1.2em;">
+    <strong>The thread.</strong> Every edition, the interesting work moved closer to the <em>kernel</em>.
+  </div>
+ </div>
+</section>
+
+<!-- ===== 4. THREE DIRECTIONS ===== -->
+<section class="fill compact">
+ <div class="fillbox">
+  <h2>Three directions for this edition</h2>
+  <div class="msg-box">
+    <div class="msg-num">1</div>
+    <div class="msg-body"><strong>Source-routed AI backends.</strong> ECMP gives no control over the fabric &mdash; SRv6 puts path placement in the host and the NIC.</div>
+  </div>
+  <div class="msg-box">
+    <div class="msg-num">2</div>
+    <div class="msg-body"><strong>L2 services beyond VXLAN.</strong> The kernel stops at End.DX2 &mdash; multipoint services and EVPN over SRv6 need more.</div>
+  </div>
+  <div class="msg-box">
+    <div class="msg-num">3</div>
+    <div class="msg-body"><strong>Provider-grade SRv6.</strong> End-to-end design on Linux + FRR, observability, and redundancy protection (R-SID).</div>
+  </div>
+  <div class="msg-box msg-box--accent">
+    <div class="msg-num">+</div>
+    <div class="msg-body"><strong>Ecosystem update.</strong> SRv6 in Linux (9 years) and in FRR (5 years) of mainline support.</div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 5. AGENDA ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <h2>Agenda &mdash; 10:00 to 12:00</h2>
+  <table class="agenda">
+    <thead>
+      <tr><th style="width:15%;">Time</th><th>Talk</th><th style="width:27%;">Speaker</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="t">10:00&ndash;10:05</td><td class="title">Workshop Introduction</td><td class="w">Stefano Salsano &mdash; Tor Vergata</td></tr>
+      <tr><td class="t">10:05&ndash;10:15</td><td class="title">SRv6 Introduction</td><td class="w">Ahmed Abdelsalam &mdash; Cisco</td></tr>
+      <tr class="mine"><td class="t">10:15&ndash;10:25</td><td class="title">SRv6 for the AI Backend</td><td class="w">Stefano Salsano &mdash; Tor Vergata</td></tr>
+      <tr><td class="t">10:25&ndash;10:40</td><td class="title">SRv6 in SONiC &mdash; &ldquo;Enabling AI Backend use-case and many others&rdquo;</td><td class="w">Ahmed Abdelsalam &mdash; Cisco</td></tr>
+      <tr><td class="t">10:40&ndash;10:55</td><td class="title">SRv6 in FRR &mdash; &ldquo;5 Years of mainline support&rdquo;</td><td class="w">Carmine Scarpitta &mdash; Cisco</td></tr>
+      <tr><td class="t">10:55&ndash;11:15</td><td class="title">SRv6 for network providers and service protection</td><td class="w">Ferenc Fejes &mdash; Ericsson</td></tr>
+      <tr><td class="t">11:15&ndash;11:25</td><td class="title">SRv6 in Linux &mdash; &ldquo;9 Years of mainline support&rdquo;</td><td class="w">Andrea Mayer &mdash; Tor Vergata</td></tr>
+      <tr class="mine"><td class="t">11:25&ndash;11:45</td><td class="title">SRv6 Layer 2 Services support</td><td class="w">Andrea Mayer &mdash; Tor Vergata</td></tr>
+      <tr><td class="t">11:45&ndash;12:00</td><td class="title">Recap and Discussion</td><td class="w">all</td></tr>
+    </tbody>
+  </table>
+  <div class="takeaway" style="margin-top: 0.8em;">
+    <strong>Slides.</strong> netgroup.github.io/netdev-0x1A-srv6-workshop &nbsp;&middot;&nbsp; questions welcome at any time.
+  </div>
+ </div>
+</section>
+
+</div></div>
+
+<script src="../assets/reveal/reveal.js"></script>
+<script src="../assets/reveal/plugin/notes/notes.js"></script>
+<script>
+  Reveal.initialize({
+    width: 1600,
+    height: 900,
+    margin: 0.04,
+    center: true,
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'fade',
+    plugins: [ RevealNotes ]
+  });
+
+  // Show the PDF button only on the title slide, so it never covers the slide number.
+  function updateChrome() {
+    var first = Reveal.getIndices().h === 0;
+    var b = document.getElementById('pdfBtn'); if (b) b.style.display = first ? 'block' : 'none';
+    var sn = document.querySelector('.reveal .slide-number'); if (sn) sn.style.display = first ? 'none' : 'block';
+  }
+  if (!/print-pdf/.test(location.search)) { updateChrome(); Reveal.on('slidechanged', updateChrome); }
+
+  // print-pdf&autoprint=1 -> open the print dialog by itself
+  if (/autoprint/.test(location.search)) { setTimeout(function () { window.print(); }, 1500); }
+</script>
+</body>
+</html>

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<!--
+  SRv6 Workshop @ Netdev 0x1A — Talk 3: SRv6 for the AI Backend
+  Self-contained Reveal.js deck (offline: Reveal vendored in ../assets/reveal/).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SRv6 for the AI Backend — Netdev 0x1A SRv6 Workshop</title>
+
+<link rel="stylesheet" href="../assets/reveal/reveal.css">
+<link rel="stylesheet" href="../assets/reveal/theme/white.css" id="theme">
+
+<style>
+  :root {
+    --c-primary:   #078052;   /* Tor Vergata green */
+    --c-primary-d: #045a3a;
+    --c-primary-l: #d1fae5;
+    --c-accent:    #d97706;   /* warm orange */
+    --c-good:      #047857;
+    --c-bad:       #b91c1c;
+    --c-muted:     #6b7280;
+    --c-soft:      #e5e7eb;
+    --c-bg-soft:   #f3f4f6;
+  }
+  .reveal { font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 40px; }
+  .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+    font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: var(--c-primary); text-transform: none; letter-spacing: -0.01em; }
+  .reveal h2 { font-size: 1.5em; margin: 0 0 0.4em; }
+  .reveal h3 { font-size: 1.1em; }
+  .reveal section { text-align: left; }
+  .reveal section.center { text-align: center; }
+  .reveal ul, .reveal ol { font-size: 0.78em; line-height: 1.4; margin: 0.3em 0; padding-left: 1.2em; }
+  .reveal li { margin: 0.15em 0; }
+  .reveal p { font-size: 0.85em; line-height: 1.4; margin: 0.3em 0; }
+  .reveal code { font-family: "Consolas","Menlo",monospace; font-size: 0.85em;
+                 background: var(--c-bg-soft); padding: 1px 4px; border-radius: 3px; color: #111; }
+  .accent { color: var(--c-accent); font-weight: 600; }
+  .good { color: var(--c-good); font-weight: 600; }
+  .bad  { color: var(--c-bad);  font-weight: 600; }
+  .primary { color: var(--c-primary); font-weight: 600; }
+  .muted { color: var(--c-muted); }
+  .footer { position: fixed; bottom: 8px; left: 16px; font-size: 11px; color: var(--c-muted); z-index: 50; }
+  .footer .sep { margin: 0 6px; color: var(--c-soft); }
+  #pdfBtn { position: fixed; bottom: 10px; right: 14px; z-index: 60; cursor: pointer;
+            font: 600 13px/1 "Segoe UI", Arial, sans-serif; color: #fff; background: var(--c-primary);
+            border: none; border-radius: 5px; padding: 8px 12px; opacity: .82; }
+  #pdfBtn:hover { opacity: 1; }
+  @media print { .footer, #pdfBtn { display: none !important; } }
+  .part-banner { display: inline-block; background: var(--c-primary); color: #fff;
+    padding: 5px 14px; border-radius: 3px; font-size: 0.5em; letter-spacing: 0.15em;
+    text-transform: uppercase; margin-bottom: 0.5em; }
+  /* === TITLE SLIDE SCOPED FONT BASE === */
+  .reveal .title-slide { font-size: 32px; }
+  .title-slide .part-banner { font-size: 0.7em; padding: 7px 18px; margin: 0.6em 0; }
+  .title-slide h1 { font-size: 2.5em; line-height: 1.15; margin: 0.4em 0 0.5em; }
+  .title-slide .authors { font-size: 0.95em; color: #222; line-height: 1.55; margin: 0.4em 0; }
+  .title-slide .venue { font-size: 0.78em; color: var(--c-muted); margin: 1em 0 0.4em; line-height: 1.5; }
+  .title-slide .paper-ref { font-size: 0.62em; color: var(--c-muted); margin-top: 0.9em; line-height: 1.4; }
+  .title-slide .logo-strip { display: flex; justify-content: center; align-items: center; gap: 32px; margin-bottom: 0.4em; }
+  .title-slide .logo-strip img { height: 130px; width: auto; }
+  /* === FILL: canvas-filling, vertically centered content ===
+     Reveal.js writes `display:block` as an INLINE style on every <section> from JS, so putting
+     `display:flex` on the section itself does not work (and forcing it with !important breaks
+     Reveal's own slide hiding: past/future slides start bleeding through).
+     The reliable pattern is an INNER wrapper: the section stays a plain Reveal block, and
+     `.fillbox` is the flex column that fills its 100% height. Keep it. */
+  .reveal .slides > section.fill { height: 100%; }
+  .reveal .slides > section.fill > .fillbox {
+    height: 100%; display: flex; flex-direction: column; justify-content: center; }
+  .fillbox > h2 { margin-bottom: 0.6em; }
+  /* compact variant: slides carrying four message boxes */
+  .fill.compact .msg-box { padding: 15px 26px; margin: 9px 0; font-size: 0.86em; }
+  table.cmp { font-size: 0.62em; border-collapse: collapse; margin: 0.4em auto; width: 100%; }
+  table.cmp th, table.cmp td { border: 1px solid var(--c-soft); padding: 8px 10px; vertical-align: middle; }
+  table.cmp th { background: var(--c-primary); color: #fff; text-align: left; font-weight: 600; }
+  table.cmp td.row-label { background: var(--c-bg-soft); font-weight: 600; }
+  table.cmp tr.highlight td { background: #fef3c7; }
+  .two-col { display: flex; gap: 18px; align-items: flex-start; }
+  .two-col > div { flex: 1; min-width: 0; }
+  .two-col svg.figure { width: 100%; height: auto; max-height: 620px; }
+  .msg-box { border-left: 8px solid var(--c-primary); background: #fafafa; padding: 22px 28px; border-radius: 4px;
+    margin: 12px 0; font-size: 0.95em; line-height: 1.4; display: flex; gap: 22px; align-items: center; }
+  .msg-box .msg-num { font-size: 1.6em; font-weight: 800; color: var(--c-primary); line-height: 1; min-width: 1.3em; text-align: center; }
+  .msg-box .msg-body strong { color: var(--c-primary); font-size: 1.15em; display: block; margin-bottom: 4px; }
+  .msg-box--accent { border-left-color: var(--c-accent); }
+  .msg-box--accent .msg-num { color: var(--c-accent); }
+  .msg-box--accent .msg-body strong { color: var(--c-accent); }
+  .takeaway { background: #fef3c7; border-left: 4px solid var(--c-accent); padding: 9px 13px; font-size: 0.78em;
+    margin-top: 0.5em; border-radius: 3px; }
+  .takeaway strong { color: var(--c-accent); }
+  .box { border: 1px solid var(--c-soft); border-radius: 4px; padding: 18px 22px; font-size: 0.85em; background: #fafafa; }
+  .cli { background: #0f172a; color: #e2e8f0; border-radius: 5px; padding: 16px 20px; font-family: "Consolas","Menlo",monospace;
+         font-size: 0.5em; line-height: 1.55; white-space: pre; overflow: hidden; }
+  .cli .k { color: #5eead4; }
+  .cli .c { color: #94a3b8; }
+  svg.figure { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .reveal section .one-line li { white-space: nowrap; }
+  svg text { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+</style>
+</head>
+<body>
+
+<div class="footer">
+  <span>S. Salsano</span><span class="sep">|</span>
+  <span>SRv6 for the AI Backend</span><span class="sep">|</span>
+  <span>SRv6 Workshop &mdash; Netdev 0x1A, Rome 2026</span>
+</div>
+
+<button id="pdfBtn" title="Open the print-ready layout, then choose Save as PDF (enable Background graphics)" onclick="location.search='print-pdf&autoprint=1'">Save as PDF</button>
+
+<div class="reveal"><div class="slides">
+
+<!-- ===== 1. TITLE SLIDE ===== -->
+<section class="title-slide center">
+  <div class="logo-strip">
+    <img src="../assets/tor-vergata-logo.png" alt="University of Rome Tor Vergata">
+    <img src="../assets/cnit-logo.png" alt="CNIT">
+  </div>
+  <div><span class="part-banner">SRv6 Workshop @ Netdev 0x1A</span></div>
+  <h1>SRv6 for the<br><span class="accent">AI Backend</span></h1>
+  <div class="authors">
+    <strong>Stefano Salsano</strong><sup>1,2</sup><br>
+    <span class="muted"><sup>1</sup>University of Rome Tor Vergata, Italy &nbsp;&middot;&nbsp; <sup>2</sup>CNIT, Italy</span>
+  </div>
+  <div class="venue">
+    <strong style="color:#222;">Netdev 0x1A &mdash; The Technical Conference on Linux Networking</strong><br>
+    SRv6 Workshop &mdash; <em>13 July 2026, Rome, Italy</em>
+  </div>
+  <div class="paper-ref">
+    C. Filsfils, P. Camarillo, A. Abdelsalam, A. Quinci, A. Tulumello, A. Mayer, P. Loreti, L. Bracciale, S. Salsano,<br>
+    &ldquo;Toward Deterministic Path Placement in AI Backends: A Practical SRv6-Based Architecture&rdquo;, <strong>IEEE CNSM 2025</strong>
+  </div>
+</section>
+
+<!-- ===== 2. AI BACKENDS ARE NOT THE INTERNET ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 1 &mdash; The problem</span>
+  <h2>An AI backend is not the Internet</h2>
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <ul class="one-line">
+        <li><strong>One owner</strong>, one fabric, known topology</li>
+        <li><strong>Few, huge flows</strong> &mdash; not millions of small ones</li>
+        <li>Collectives are <strong>synchronous</strong>: all-reduce, all-to-all</li>
+        <li>The <span class="bad">slowest flow</span> sets the job completion time</li>
+        <li>GPUs idle while the network catches up</li>
+      </ul>
+      <div class="takeaway" style="margin-top: 1.4em;">
+        <strong>Consequence.</strong> Average throughput is irrelevant: the <em>tail</em> is what you pay for.
+      </div>
+    </div>
+    <div>
+      <svg class="figure" viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg">
+        <g font-size="20">
+          <!-- spine -->
+          <rect x="120" y="20"  width="150" height="52" rx="6" fill="#f3f4f6" stroke="#6b7280" stroke-width="2"/>
+          <text x="195" y="52" text-anchor="middle" font-weight="600">Spine 1</text>
+          <rect x="430" y="20"  width="150" height="52" rx="6" fill="#f3f4f6" stroke="#6b7280" stroke-width="2"/>
+          <text x="505" y="52" text-anchor="middle" font-weight="600">Spine 2</text>
+          <!-- leaf -->
+          <rect x="40"  y="180" width="150" height="52" rx="6" fill="#d1fae5" stroke="#078052" stroke-width="2"/>
+          <text x="115" y="212" text-anchor="middle" font-weight="600">Leaf A</text>
+          <rect x="275" y="180" width="150" height="52" rx="6" fill="#d1fae5" stroke="#078052" stroke-width="2"/>
+          <text x="350" y="212" text-anchor="middle" font-weight="600">Leaf B</text>
+          <rect x="510" y="180" width="150" height="52" rx="6" fill="#d1fae5" stroke="#078052" stroke-width="2"/>
+          <text x="585" y="212" text-anchor="middle" font-weight="600">Leaf C</text>
+          <!-- links -->
+          <g stroke="#9ca3af" stroke-width="2">
+            <line x1="115" y1="180" x2="170" y2="72"/><line x1="115" y1="180" x2="460" y2="72"/>
+            <line x1="350" y1="180" x2="215" y2="72"/><line x1="350" y1="180" x2="495" y2="72"/>
+            <line x1="585" y1="180" x2="255" y2="72"/><line x1="585" y1="180" x2="540" y2="72"/>
+          </g>
+          <!-- GPU hosts -->
+          <g>
+            <rect x="40"  y="300" width="150" height="52" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+            <text x="115" y="332" text-anchor="middle" font-weight="600">GPU host</text>
+            <rect x="275" y="300" width="150" height="52" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+            <text x="350" y="332" text-anchor="middle" font-weight="600">GPU host</text>
+            <rect x="510" y="300" width="150" height="52" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+            <text x="585" y="332" text-anchor="middle" font-weight="600">GPU host</text>
+            <g stroke="#d97706" stroke-width="2">
+              <line x1="115" y1="300" x2="115" y2="232"/>
+              <line x1="350" y1="300" x2="350" y2="232"/>
+              <line x1="585" y1="300" x2="585" y2="232"/>
+            </g>
+          </g>
+          <text x="350" y="405" text-anchor="middle" font-size="21" fill="#b91c1c" font-weight="600">all-reduce: everybody waits for the last byte</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 3. ECMP ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 1 &mdash; The problem</span>
+  <h2>ECMP: spreading is not placement</h2>
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <ul class="one-line">
+        <li>The switch hashes the 5-tuple &mdash; <span class="bad">it does not plan</span></li>
+        <li><strong>Hash collisions</strong>: two elephants, one uplink</li>
+        <li>No entity <strong>owns</strong> the end-to-end path</li>
+        <li>On failure: wait for <strong>control-plane convergence</strong></li>
+        <li>Rehashing moves flows you did <em>not</em> want to move</li>
+      </ul>
+      <div class="takeaway" style="margin-top: 1.4em;">
+        <strong>The gap.</strong> We spread flows <em>statistically</em> on a fabric we control <em>exactly</em>.
+      </div>
+    </div>
+    <div>
+      <svg class="figure" viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg">
+        <g font-size="20">
+          <rect x="120" y="20"  width="160" height="52" rx="6" fill="#fee2e2" stroke="#b91c1c" stroke-width="2.5"/>
+          <text x="200" y="52" text-anchor="middle" font-weight="700" fill="#b91c1c">Spine 1</text>
+          <rect x="430" y="20"  width="160" height="52" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
+          <text x="510" y="52" text-anchor="middle" font-weight="600" fill="#9ca3af">Spine 2 (idle)</text>
+
+          <rect x="60"  y="250" width="160" height="52" rx="6" fill="#d1fae5" stroke="#078052" stroke-width="2"/>
+          <text x="140" y="282" text-anchor="middle" font-weight="600">Leaf A</text>
+          <rect x="480" y="250" width="160" height="52" rx="6" fill="#d1fae5" stroke="#078052" stroke-width="2"/>
+          <text x="560" y="282" text-anchor="middle" font-weight="600">Leaf C</text>
+
+          <!-- two colliding flows on the same uplink -->
+          <path d="M140,250 L185,72" stroke="#b91c1c" stroke-width="6" fill="none"/>
+          <path d="M158,250 L207,72" stroke="#d97706" stroke-width="6" fill="none"/>
+          <path d="M215,72 L552,250" stroke="#b91c1c" stroke-width="6" fill="none"/>
+          <path d="M237,72 L570,250" stroke="#d97706" stroke-width="6" fill="none"/>
+
+          <!-- unused links -->
+          <g stroke="#d1d5db" stroke-width="2" stroke-dasharray="6 5">
+            <line x1="140" y1="250" x2="460" y2="72"/>
+            <line x1="560" y1="250" x2="530" y2="72"/>
+          </g>
+
+          <!-- label plate: keeps the caption legible where the two flows cross -->
+          <rect x="165" y="125" width="370" height="70" rx="6" fill="#fff" fill-opacity="0.92"/>
+          <text x="350" y="155" text-anchor="middle" font-size="22" font-weight="700" fill="#b91c1c">same hash bucket</text>
+          <text x="350" y="184" text-anchor="middle" font-size="20" fill="#b91c1c">2 &times; 400G on one 400G uplink</text>
+
+          <text x="140" y="345" text-anchor="middle" font-size="20" fill="#b91c1c" font-weight="600">flow 1</text>
+          <text x="140" y="375" text-anchor="middle" font-size="20" fill="#d97706" font-weight="600">flow 2</text>
+          <text x="350" y="425" text-anchor="middle" font-size="21" fill="#6b7280">half the fabric is idle, half the job is late</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 4. SOURCE ROUTING IS THE ANSWER ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 2 &mdash; The fix</span>
+  <h2>Source routing: the segment list <em>is</em> the path</h2>
+  <div class="msg-box">
+    <div class="msg-num">1</div>
+    <div class="msg-body"><strong>Decide at the source.</strong> The host (or the NIC) picks the exact fabric path, per packet or per flowlet.</div>
+  </div>
+  <div class="msg-box">
+    <div class="msg-num">2</div>
+    <div class="msg-body"><strong>No hash, no collision.</strong> Placement is explicit: the fabric stops guessing and just executes the SID list.</div>
+  </div>
+  <div class="msg-box msg-box--accent">
+    <div class="msg-num">3</div>
+    <div class="msg-body"><strong>Failures are a local decision.</strong> Switch the SID list at the host &mdash; no waiting for control-plane convergence.</div>
+  </div>
+  <div class="takeaway" style="margin-top: 1.2em;">
+    <strong>And it is plain IPv6.</strong> SRv6 needs no new dataplane in the fabric &mdash; the switches already forward it.
+  </div>
+ </div>
+</section>
+
+<!-- ===== 5. DETERMINISTIC, CONGESTION-AWARE PLACEMENT ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 2 &mdash; The fix</span>
+  <h2>Deterministic, congestion-aware placement</h2>
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <ul class="one-line">
+        <li><strong>Telemetry in</strong>: link load, queue depth, failures</li>
+        <li><strong>Path set out</strong>: a few disjoint SID lists per destination</li>
+        <li>The host <strong>selects</strong>, packet by packet</li>
+        <li>Reaction time = <span class="good">host RTT</span>, not convergence time</li>
+      </ul>
+      <div class="takeaway" style="margin-top: 1.4em;">
+        <strong>Division of labour.</strong> The controller <em>proposes</em> the paths, the host <em>disposes</em> of the packets.
+      </div>
+    </div>
+    <div>
+      <svg class="figure" viewBox="0 0 700 490" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" fill="#078052"/>
+          </marker>
+          <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" fill="#d97706"/>
+          </marker>
+        </defs>
+        <g font-size="20">
+          <rect x="150" y="15" width="400" height="60" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="2"/>
+          <text x="350" y="52" text-anchor="middle" font-weight="600">Controller / telemetry</text>
+
+          <path d="M350,75 L350,122" stroke="#078052" stroke-width="3" marker-end="url(#ar)"/>
+          <text x="365" y="105" font-size="18" fill="#078052">candidate SID lists</text>
+
+          <rect x="120" y="130" width="460" height="150" rx="8" fill="#d1fae5" stroke="#078052" stroke-width="2.5"/>
+          <text x="350" y="165" text-anchor="middle" font-weight="700" fill="#078052">Host / NIC &mdash; per-packet selection</text>
+          <rect x="145" y="185" width="185" height="42" rx="5" fill="#fff" stroke="#078052" stroke-width="2"/>
+          <text x="237" y="212" text-anchor="middle" font-size="19">&lt;S1, S3, D&gt;</text>
+          <rect x="370" y="185" width="185" height="42" rx="5" fill="#fef3c7" stroke="#d97706" stroke-width="2.5"/>
+          <text x="462" y="212" text-anchor="middle" font-size="19" font-weight="700">&lt;S2, S4, D&gt;</text>
+          <text x="350" y="258" text-anchor="middle" font-size="18" fill="#065f46">pick the path that is not congested</text>
+
+          <path d="M350,280 L350,322" stroke="#d97706" stroke-width="3" marker-end="url(#ar2)"/>
+
+          <rect x="120" y="330" width="460" height="60" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="2"/>
+          <text x="350" y="367" text-anchor="middle" font-weight="600">Fabric: just forwards the SRv6 packet</text>
+          <text x="350" y="440" text-anchor="middle" font-size="21" fill="#078052" font-weight="600">no new dataplane, no hash lottery</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 6. LINUX DATAPATH ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 3 &mdash; Linux</span>
+  <h2>The Linux datapath</h2>
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <ul class="one-line">
+        <li><code>seg6</code> lwtunnel: encap, one static SID list per route</li>
+        <li><code>seg6local</code>: the behaviors, on the receive side</li>
+        <li>The hard part: <strong>choosing</strong> the list per packet</li>
+        <li>Not a routing lookup &mdash; a <strong>policy</strong> decision</li>
+        <li>Needs feedback state next to the datapath</li>
+      </ul>
+      <div class="takeaway" style="margin-top: 1.4em;">
+        <strong>The kernel gap.</strong> <code>seg6</code> can <em>apply</em> a path; nothing in it <em>picks</em> one.
+      </div>
+    </div>
+    <div>
+      <div class="cli"><span class="c"># one path, statically bound to a route</span>
+ip -6 route add fc00:d::/64 \
+    encap seg6 mode encap \
+    segs fc00:1::s1,fc00:3::s3 dev eth0
+
+<span class="c"># what an AI backend actually needs</span>
+<span class="k">for each packet:</span>
+    p = select_path(dst, telemetry, state)
+    push_srh(p)</div>
+      <div class="box" style="margin-top: 18px; font-size: 0.62em; border-left: 6px solid var(--c-accent);">
+        <strong class="accent">Where the selection lives</strong><br>
+        eBPF at the socket / TC egress &mdash; or XDP, or the NIC itself.
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 7. LINE RATE ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 3 &mdash; Linux</span>
+  <h2>Doing it at line rate</h2>
+  <table class="cmp">
+    <thead>
+      <tr><th style="width:26%;"></th><th>Where it runs</th><th>Per-packet choice</th><th>Line rate at 400G+</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="row-label">seg6 lwtunnel</td>
+        <td>kernel, route-bound</td>
+        <td><span class="bad">no &mdash; static list</span></td>
+        <td>CPU-bound encap</td>
+      </tr>
+      <tr>
+        <td class="row-label">eBPF / XDP</td>
+        <td>kernel, programmable</td>
+        <td><span class="good">yes</span> &mdash; maps hold the path set</td>
+        <td>good, but CPU cycles per packet</td>
+      </tr>
+      <tr class="highlight">
+        <td class="row-label">NIC offload</td>
+        <td>hardware</td>
+        <td><span class="good">yes</span>, if the NIC exposes the SID list</td>
+        <td><strong>the only way to keep the GPUs fed</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="takeaway" style="margin-top: 2.2em;">
+    <strong>The ask to this room.</strong> A clean split: <em>policy</em> in eBPF, <em>encap</em> in the NIC &mdash; with a kernel API that does not fight either.
+  </div>
+ </div>
+</section>
+
+<!-- ===== 8. ECOSYSTEM + MRC ===== -->
+<section class="fill compact">
+ <div class="fillbox">
+  <span class="part-banner">Part 4 &mdash; The ecosystem</span>
+  <h2>It does not work alone</h2>
+  <div class="msg-box">
+    <div class="msg-num">&#9679;</div>
+    <div class="msg-body"><strong>FRR.</strong> SID allocation and distribution &mdash; the host needs to know which segments exist.</div>
+  </div>
+  <div class="msg-box">
+    <div class="msg-num">&#9679;</div>
+    <div class="msg-body"><strong>SONiC.</strong> The switch side of the same story &mdash; see Ahmed's talk right after this one.</div>
+  </div>
+  <div class="msg-box">
+    <div class="msg-num">&#9679;</div>
+    <div class="msg-body"><strong>Telemetry.</strong> Load and failure signals, fast enough to be worth reacting to.</div>
+  </div>
+  <div class="msg-box msg-box--accent">
+    <div class="msg-num">&#9733;</div>
+    <div class="msg-body"><strong>MRC.</strong> This architecture underpins the industry MRC protocol &mdash; <em>main-track talk</em> at this conference.</div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 9. CONCLUSIONS ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <h2>Conclusions</h2>
+  <div class="two-col">
+    <div class="box" style="border-left: 6px solid var(--c-primary);">
+      <strong class="primary">What we have</strong>
+      <p style="font-size:0.9em; margin-top:8px; line-height:1.45;">An SRv6 architecture that turns an AI fabric from
+         <em>statistically spread</em> into <em>deterministically placed</em> &mdash; on plain IPv6, no new dataplane.</p>
+    </div>
+    <div class="box" style="border-left: 6px solid var(--c-accent);">
+      <strong class="accent">What we need</strong>
+      <p style="font-size:0.9em; margin-top:8px; line-height:1.45;">Kernel and NIC support for <em>per-packet</em> segment-list
+         selection at line rate, and the telemetry loop to drive it.</p>
+    </div>
+  </div>
+  <div class="takeaway" style="margin-top: 2em;">
+    <strong>Take-home.</strong> In a fabric you own completely, guessing the path is a choice &mdash; and a bad one.
+  </div>
+  <p style="text-align:center; margin-top:1.4em; font-size:0.62em; color:var(--c-muted); line-height:1.45;">
+    C. Filsfils, P. Camarillo, A. Abdelsalam, A. Quinci, A. Tulumello, A. Mayer, P. Loreti, L. Bracciale, S. Salsano,<br>
+    &ldquo;Toward Deterministic Path Placement in AI Backends: A Practical SRv6-Based Architecture&rdquo;, <strong>IEEE CNSM 2025</strong><br>
+    <span class="primary"><strong>stefano.salsano@uniroma2.it</strong></span>
+  </p>
+ </div>
+</section>
+
+</div></div>
+
+<script src="../assets/reveal/reveal.js"></script>
+<script src="../assets/reveal/plugin/notes/notes.js"></script>
+<script>
+  Reveal.initialize({
+    width: 1600,
+    height: 900,
+    margin: 0.04,
+    center: true,
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'fade',
+    plugins: [ RevealNotes ]
+  });
+
+  function updateChrome() {
+    var first = Reveal.getIndices().h === 0;
+    var b = document.getElementById('pdfBtn'); if (b) b.style.display = first ? 'block' : 'none';
+    var sn = document.querySelector('.reveal .slide-number'); if (sn) sn.style.display = first ? 'none' : 'block';
+  }
+  if (!/print-pdf/.test(location.search)) { updateChrome(); Reveal.on('slidechanged', updateChrome); }
+
+  if (/autoprint/.test(location.search)) { setTimeout(function () { window.print(); }, 1500); }
+</script>
+</body>
+</html>

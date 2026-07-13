@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<!--
+  SRv6 Workshop @ Netdev 0x1A — workshop landing page.
+  Based on the "dark hero" landing template (reveal-academic-talk skill), adapted
+  from a single-talk page to a workshop programme page.
+  Self-contained: CSS inline, no dependencies, no remote fonts.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SRv6 Workshop — Netdev 0x1A, Rome 2026</title>
+<meta name="description" content="SRv6 Workshop at Netdev 0x1A (Rome, 13–16 July 2026): source-routed AI backends, L2 services beyond VXLAN, provider-grade SRv6 and service protection. Programme, abstract and slides.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SRv6 Workshop — Netdev 0x1A, Rome 2026">
+<meta property="og:description" content="Source-routed AI backends, L2 services beyond VXLAN, provider-grade SRv6 with service protection. Programme, abstract and slides.">
+<meta property="og:url" content="https://netgroup.github.io/netdev-0x1A-srv6-workshop/">
+<style>
+  :root{
+    --ink:#111827; --mute:#6b7280; --line:#e5e7eb; --panel:#f9fafb;
+    --accent:#059669; --accent-d:#047857; --accent-soft:#e7f6ef; --accent-ink:#065f46;
+    --amber-soft:#fef3c7; --amber-ink:#92400e;
+    --hero-bg1:#0a0f1c; --hero-bg2:#0e1a2b; --hero-mute:#94a3b8; --hero-line:rgba(255,255,255,.1);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:ui-sans-serif,-apple-system,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
+       background:#fff; color:var(--ink); line-height:1.6; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:900px; margin:0 auto; padding:0 1.5rem;}
+  a{color:var(--accent); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  code{font-family:ui-monospace,Consolas,Menlo,monospace; font-size:.9em; background:var(--panel);
+       border:1px solid var(--line); padding:.05em .35em; border-radius:5px;}
+
+  /* ---- dark hero with gradient + glow ---- */
+  header{
+    color:#fff; padding:2.52rem 0 1.92rem;
+    background:
+      radial-gradient(900px 420px at 15% -10%, rgba(16,185,129,.28), transparent 60%),
+      radial-gradient(700px 380px at 95% 0%, rgba(34,211,238,.16), transparent 55%),
+      linear-gradient(180deg, var(--hero-bg1), var(--hero-bg2));
+    border-bottom:1px solid var(--hero-line);
+  }
+  .kicker{font-size:.8rem; font-weight:650; letter-spacing:.16em; text-transform:uppercase;
+          color:#5eead4; margin-bottom:1rem;}
+  h1{font-size:clamp(1.35rem, 2.9vw, 1.85rem); line-height:1.2; letter-spacing:-.02em;
+     font-weight:750; max-width:56ch;}
+  h1 .grad{background:linear-gradient(90deg,#34d399,#22d3ee); -webkit-background-clip:text;
+           background-clip:text; color:transparent;}
+  .sub{font-size:.95rem; color:#c3d0e2; max-width:none; margin-top:1.1rem;}
+  .meta{font-size:.92rem; color:var(--hero-mute); margin-top:1.5rem; line-height:1.7;}
+  .meta strong{color:#e2e8f0; font-weight:600;}
+  .hero-actions{margin-top:1.8rem;}
+  .btn{display:inline-flex; align-items:center; gap:.45rem; font-size:.92rem; font-weight:600;
+       border-radius:8px; padding:.6rem 1.15rem; margin:.15rem .5rem .15rem 0;
+       transition:background .15s ease, border-color .15s ease;}
+  .btn.primary{background:#10b981; color:#04120c;}
+  .btn.primary:hover{background:#34d399; text-decoration:none;}
+  .btn.hero-ghost{border:1px solid rgba(255,255,255,.35); color:#fff; background:transparent;}
+  .btn.hero-ghost:hover{border-color:#fff; background:rgba(255,255,255,.06); text-decoration:none;}
+  .btn .ico{font-size:1rem; line-height:1;}
+
+  /* ---- light body ---- */
+  main{padding-bottom:3rem;}
+  section{margin-top:2.8rem;}
+  h2{font-size:1.28rem; font-weight:700; letter-spacing:-.01em; margin-bottom:.9rem;}
+  h2 .h2-note{font-size:.82rem; font-weight:500; color:var(--mute); margin-left:.5rem;}
+  p{margin-bottom:.8rem;}
+  ul.toc{margin:.4rem 0 .4rem 1.15rem; font-size:.98rem;}
+  ul.toc li{margin-bottom:.45rem;}
+  ul.toc li::marker{color:var(--accent);}
+  .tag{display:inline-block; font-size:.68rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+       background:var(--accent-soft); color:var(--accent-ink); padding:.16rem .5rem; border-radius:999px;
+       margin-left:.35rem; vertical-align:middle;}
+  .tag.soon{background:var(--panel); color:var(--mute); border:1px solid var(--line);}
+  .tag.pending{background:var(--amber-soft); color:var(--amber-ink);}
+  .card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:1.4rem 1.5rem;
+        box-shadow:0 1px 2px rgba(0,0,0,.04); transition:box-shadow .18s ease, transform .18s ease;}
+  .card:hover{box-shadow:0 6px 20px rgba(0,0,0,.07); transform:translateY(-1px);}
+  .card h3{font-size:1.02rem; font-weight:650; margin-bottom:.35rem;}
+  .card p{color:var(--mute); font-size:.95rem; margin-bottom:1rem;}
+  .btn.body-primary{background:var(--accent); color:#fff;}
+  .btn.body-primary:hover{background:var(--accent-d); text-decoration:none;}
+  .btn.ghost{border:1px solid var(--line); color:var(--ink); background:transparent;}
+  .btn.ghost:hover{background:var(--panel); text-decoration:none;}
+
+  /* ---- three directions ---- */
+  .cards3{display:grid; grid-template-columns:repeat(3,1fr); gap:1rem;}
+  .cards3 .card{padding:1.15rem 1.25rem;}
+  .cards3 .card p{margin-bottom:0; font-size:.9rem;}
+  .cards3 .num{font-size:.72rem; font-weight:800; letter-spacing:.1em; color:var(--accent); margin-bottom:.3rem;}
+  @media (max-width:720px){ .cards3{grid-template-columns:1fr;} }
+
+  /* ---- agenda ---- */
+  table.agenda{width:100%; border-collapse:collapse; font-size:.94rem; margin-top:.4rem;}
+  table.agenda th{text-align:left; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase;
+                  color:var(--mute); font-weight:700; padding:.5rem .6rem; border-bottom:2px solid var(--line);}
+  table.agenda td{padding:.75rem .6rem; border-bottom:1px solid var(--line); vertical-align:top;}
+  table.agenda td.time{white-space:nowrap; font-variant-numeric:tabular-nums; font-weight:650; color:var(--accent-ink); width:6.6rem;}
+  table.agenda td.who{color:var(--mute); font-size:.88rem; width:14rem;}
+  table.agenda td.links{white-space:nowrap; text-align:right; width:8.5rem; font-size:.85rem;}
+  table.agenda td.links a{font-weight:600;}
+  table.agenda tr:hover td{background:var(--panel);}
+  .talk-title{font-weight:600;}
+  .talk-sub{display:block; color:var(--mute); font-size:.86rem; font-weight:400;}
+
+  footer{border-top:1px solid var(--line); padding:1.6rem 0 2.2rem; margin-top:3rem;
+         font-size:.85rem; color:var(--mute);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">SRv6 Workshop · Netdev 0x1A · Rome 2026</div>
+    <h1>SRv6 in Linux: <span class="grad">AI backends, Provider Deployments,<br>L2 services</span> and Eco-systems updates</h1>
+    <p class="sub">Third edition of the netdev SRv6 workshop, after Lisbon 0x16 (2022) and Zagreb 0x19 (2025).</p>
+    <p class="meta"><strong>Chair:</strong> Stefano Salsano — University of Rome Tor Vergata / CNIT<br>
+       Netdev 0x1A — The Technical Conference on Linux Networking (13–16 July 2026, Rome, Italy)<br>
+       Workshop: <strong>Monday 13 July 2026</strong>, 10:00–12:00</p>
+    <div class="hero-actions">
+      <a class="btn primary" href="#programme"><span>Programme &amp; slides</span><span class="ico">→</span></a>
+      <a class="btn hero-ghost" href="#abstract"><span>Read the abstract</span><span class="ico">↓</span></a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- The slides / programme FIRST -->
+  <section id="programme">
+    <h2>Programme &amp; slides <span class="h2-note">10:00–12:00</span></h2>
+    <table class="agenda">
+      <thead>
+        <tr><th>Time</th><th>Talk</th><th>Speaker</th><th style="text-align:right;">Slides</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="time">10:00–10:05</td>
+          <td><span class="talk-title">Workshop Introduction</span></td>
+          <td class="who">Stefano Salsano<br>Univ. of Rome Tor Vergata</td>
+          <td class="links">
+            <a href="slides/01-workshop-intro/presentation.html">HTML</a> ·
+            <a href="slides/01-workshop-intro/presentation.pdf">PDF</a>
+          </td>
+        </tr>
+        <tr>
+          <td class="time">10:05–10:15</td>
+          <td><span class="talk-title">SRv6 Introduction</span></td>
+          <td class="who">Ahmed Abdelsalam<br>Cisco</td>
+          <td class="links"><span class="tag soon">soon</span></td>
+        </tr>
+        <tr>
+          <td class="time">10:15–10:25</td>
+          <td><span class="talk-title">SRv6 for the AI Backend</span>
+              <span class="talk-sub">Deterministic path placement, decided at the host and the NIC</span></td>
+          <td class="who">Stefano Salsano<br>Univ. of Rome Tor Vergata</td>
+          <td class="links">
+            <a href="slides/02-srv6-ai-backend/presentation.html">HTML</a> ·
+            <a href="slides/02-srv6-ai-backend/presentation.pdf">PDF</a>
+          </td>
+        </tr>
+        <tr>
+          <td class="time">10:25–10:40</td>
+          <td><span class="talk-title">SRv6 in SONiC</span>
+              <span class="talk-sub">“Enabling AI Backend use-case and many others”</span></td>
+          <td class="who">Ahmed Abdelsalam<br>Cisco</td>
+          <td class="links"><span class="tag soon">soon</span></td>
+        </tr>
+        <tr>
+          <td class="time">10:40–10:55</td>
+          <td><span class="talk-title">SRv6 in FRR</span>
+              <span class="talk-sub">“5 Years of mainline support”</span></td>
+          <td class="who">Carmine Scarpitta<br>Cisco</td>
+          <td class="links"><span class="tag soon">soon</span></td>
+        </tr>
+        <tr>
+          <td class="time">10:55–11:15</td>
+          <td><span class="talk-title">SRv6 for network providers and service protection</span>
+              <span class="talk-sub">Provider-style design on Linux + FRR, observability, redundancy protection</span></td>
+          <td class="who">Ferenc Fejes<br>Ericsson</td>
+          <td class="links"><span class="tag soon">soon</span></td>
+        </tr>
+        <tr>
+          <td class="time">11:15–11:25</td>
+          <td><span class="talk-title">SRv6 in Linux</span>
+              <span class="talk-sub">“9 Years of mainline support”</span></td>
+          <td class="who">Andrea Mayer<br>Univ. of Rome Tor Vergata</td>
+          <td class="links"><span class="tag soon">soon</span></td>
+        </tr>
+        <tr>
+          <td class="time">11:25–11:45</td>
+          <td><span class="talk-title">SRv6 Layer 2 Services support</span>
+              <span class="talk-sub">End.DT2U, the sr6 Ethernet pseudowire device, and the road past VXLAN</span></td>
+          <td class="who">Andrea Mayer<br>Univ. of Rome Tor Vergata</td>
+          <td class="links">
+            <a href="slides/03-srv6-l2-services/presentation.html">HTML</a> ·
+            <a href="slides/03-srv6-l2-services/presentation.pdf">PDF</a>
+          </td>
+        </tr>
+        <tr>
+          <td class="time">11:45–12:00</td>
+          <td><span class="talk-title">Recap and Discussion</span></td>
+          <td class="who">all speakers</td>
+          <td class="links">—</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:.88rem; color:var(--mute); margin-top:1rem;">
+      Slides are self-contained Reveal.js decks: they run in any browser, also offline. Navigate with the arrow keys or a
+      presenter remote; press <code>F</code> for fullscreen. Decks marked <span class="tag soon">soon</span> will be posted
+      after the session.
+    </p>
+  </section>
+
+  <section id="abstract">
+    <h2>The workshop</h2>
+    <p>Segment Routing over IPv6 (SRv6, <a href="https://www.rfc-editor.org/rfc/rfc8986">RFC 8986</a>) lets an application or
+       operator encode a packet-processing program directly in the IPv6 header. SRv6 has been supported in the Linux kernel
+       since release 4.10, and a rich open-source ecosystem (FRR, SONiC, Cilium, VPP) has grown on top of it.</p>
+    <p>Following the SRv6 workshops at Netdev 0x16 (Lisbon 2022) and 0x19 (Zagreb 2025), this edition covers three directions
+       that directly impact the kernel datapath — source-routed AI backends, L2 services beyond VXLAN, and provider-grade SRv6
+       deployment with service protection — plus a short ecosystem update.</p>
+  </section>
+
+  <section>
+    <h2>Three directions</h2>
+    <div class="cards3">
+      <div class="card">
+        <div class="num">01</div>
+        <h3>Source-routed AI backends</h3>
+        <p>ECMP spreading gives little control over how flows map onto a fabric you own completely. SRv6 moves path placement to
+           the host and the NIC: deterministic, congestion-aware, and reacting to failures without waiting for control-plane
+           convergence. In Linux: per-packet segment-list selection in <code>seg6</code>/<code>seg6local</code>, eBPF/XDP and NIC
+           offload at line rate. Underpins the industry MRC protocol (main-track talk).</p>
+      </div>
+      <div class="card">
+        <div class="num">02</div>
+        <h3>L2 services beyond VXLAN</h3>
+        <p>RFC 8986 defines the L2 endpoint behaviors (<code>End.DX2</code>, <code>End.DT2U</code>, <code>End.DT2M</code>) and
+           RFC 9252 the EVPN overlay over SRv6. Kernel L2 support still stops at the <code>End.DX2</code> cross-connect. A recent
+           netdev RFC series adds <code>End.DT2U</code> and the <code>sr6</code> Ethernet pseudowire device — the path to
+           multipoint services, EVPN-over-SRv6 in FRR, and replacing VXLAN in cloud orchestrators.</p>
+      </div>
+      <div class="card">
+        <div class="num">03</div>
+        <h3>Providers &amp; service protection</h3>
+        <p>End-to-end provider-style design on GNU/Linux + FRRouting: addressing, per-service VRF, SID allocation, BGP/IS-IS, TE,
+           with an SR-MPLS coexistence comparison. Lookup-level observability with <code>tablesnoop</code>, and Redundancy
+           Protection (R-SID, <code>draft-ietf-spring-sr-redundancy-protection</code>, XDPFRER for SRv6).</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>References</h2>
+    <ul class="toc">
+      <li><strong>RFC 8986</strong> — SRv6 Network Programming.
+          <a href="https://www.rfc-editor.org/rfc/rfc8986">rfc-editor.org/rfc/rfc8986</a></li>
+      <li><strong>RFC 9252</strong> — BGP Overlay Services Based on Segment Routing over IPv6 (EVPN over SRv6).
+          <a href="https://www.rfc-editor.org/rfc/rfc9252">rfc-editor.org/rfc/rfc9252</a></li>
+      <li><strong>Internet-Draft</strong><span class="tag">ongoing</span>
+          <em>draft-ietf-spring-sr-redundancy-protection</em> — SR redundancy protection (R-SID).</li>
+      <li><strong>AI backend paper.</strong> C. Filsfils, P. Camarillo, A. Abdelsalam, A. Quinci, A. Tulumello, A. Mayer,
+          P. Loreti, L. Bracciale, S. Salsano, <em>“Toward Deterministic Path Placement in AI Backends: A Practical SRv6-Based
+          Architecture”</em>, IEEE CNSM 2025.</li>
+      <li><strong>Previous editions.</strong> SRv6 workshop at Netdev 0x16 (Lisbon, 2022) and Netdev 0x19 (Zagreb, 2025).</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Notes</h2>
+    <p style="font-size:.95rem;">Workshop chair: <strong>Stefano Salsano</strong>, University of Rome Tor Vergata / CNIT.
+       Speakers: Ahmed Abdelsalam (Cisco), Carmine Scarpitta (Cisco), Ferenc Fejes (Ericsson), Andrea Mayer (Univ. of Rome
+       Tor Vergata).</p>
+    <p style="font-size:.9rem; color:var(--mute);">Contact:
+       <a href="mailto:stefano.salsano@uniroma2.it">stefano.salsano@uniroma2.it</a></p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    © 2026 the authors — slides released under
+    <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>
+    (free to reuse with attribution); referenced papers are © their respective publishers.
+  </div>
+</footer>
+
+</body>
+</html>

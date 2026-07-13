@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<!--
+  SRv6 Workshop @ Netdev 0x1A — Talk 8: SRv6 Layer 2 Services support
+  Speaker: Andrea Mayer. Self-contained Reveal.js deck (Reveal vendored in ../assets/reveal/).
+  Content grounded on the RFC v2 branches:
+    kernel   : netgroup/srv6-linux-kernel-dev    @ seg6_sr6_L2encap_rfc-v2
+    iproute2 : netgroup/srv6-linux-iproute2-dev  @ seg6_sr6_L2encap_UAPI-v2
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SRv6 Layer 2 Services support — Netdev 0x1A SRv6 Workshop</title>
+
+<link rel="stylesheet" href="../assets/reveal/reveal.css">
+<link rel="stylesheet" href="../assets/reveal/theme/white.css" id="theme">
+
+<style>
+  :root {
+    --c-primary:   #078052;   /* Tor Vergata green */
+    --c-primary-d: #045a3a;
+    --c-primary-l: #d1fae5;
+    --c-accent:    #d97706;   /* warm orange */
+    --c-good:      #047857;
+    --c-bad:       #b91c1c;
+    --c-muted:     #6b7280;
+    --c-soft:      #e5e7eb;
+    --c-bg-soft:   #f3f4f6;
+    --c-pnrr-bg:   #003d80;   /* PNRR funding-strip navy */
+  }
+  .reveal { font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 40px; }
+  .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+    font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: var(--c-primary); text-transform: none; letter-spacing: -0.01em; }
+  .reveal h2 { font-size: 1.5em; margin: 0 0 0.4em; }
+  .reveal h3 { font-size: 1.1em; }
+  .reveal section { text-align: left; }
+  .reveal section.center { text-align: center; }
+  .reveal ul, .reveal ol { font-size: 0.78em; line-height: 1.4; margin: 0.3em 0; padding-left: 1.2em; }
+  .reveal li { margin: 0.15em 0; }
+  .reveal p { font-size: 0.85em; line-height: 1.4; margin: 0.3em 0; }
+  .reveal code { font-family: "Consolas","Menlo",monospace; font-size: 0.85em;
+                 background: var(--c-bg-soft); padding: 1px 4px; border-radius: 3px; color: #111; }
+  .accent { color: var(--c-accent); font-weight: 600; }
+  .good { color: var(--c-good); font-weight: 600; }
+  .bad  { color: var(--c-bad);  font-weight: 600; }
+  .primary { color: var(--c-primary); font-weight: 600; }
+  .muted { color: var(--c-muted); }
+  .footer { position: fixed; bottom: 8px; left: 16px; font-size: 11px; color: var(--c-muted); z-index: 50; }
+  .footer .sep { margin: 0 6px; color: var(--c-soft); }
+  #pdfBtn { position: fixed; bottom: 10px; right: 14px; z-index: 60; cursor: pointer;
+            font: 600 13px/1 "Segoe UI", Arial, sans-serif; color: #fff; background: var(--c-primary);
+            border: none; border-radius: 5px; padding: 8px 12px; opacity: .82; }
+  #pdfBtn:hover { opacity: 1; }
+  @media print { .footer, #pdfBtn { display: none !important; } }
+  .part-banner { display: inline-block; background: var(--c-primary); color: #fff;
+    padding: 5px 14px; border-radius: 3px; font-size: 0.5em; letter-spacing: 0.15em;
+    text-transform: uppercase; margin-bottom: 0.5em; }
+  /* === TITLE SLIDE SCOPED FONT BASE === */
+  .reveal .title-slide { font-size: 30px; }
+  .title-slide .part-banner { font-size: 0.7em; padding: 7px 18px; margin: 0.5em 0; }
+  .title-slide h1 { font-size: 2.3em; line-height: 1.15; margin: 0.35em 0 0.45em; }
+  .title-slide .authors { font-size: 0.95em; color: #222; line-height: 1.55; margin: 0.35em 0; }
+  .title-slide .venue { font-size: 0.76em; color: var(--c-muted); margin: 0.8em 0 0.3em; line-height: 1.5; }
+  .title-slide .ack { font-size: 0.62em; color: var(--c-muted); margin-top: 0.5em; }
+  .title-slide .logo-strip { display: flex; justify-content: center; align-items: center; gap: 32px; margin-bottom: 0.3em; }
+  .title-slide .logo-strip img { height: 110px; width: auto; }
+  /* PNRR / PRIN funding banner */
+  /* box-sizing: without it the 14px horizontal padding is ADDED to width:100% and the
+     banner sticks out of the 1600px canvas (title slide overflows by 28px). */
+  .prin-banner { box-sizing: border-box; margin: 0.7em auto 0.2em; width: 100%; background: var(--c-pnrr-bg);
+    border-radius: 3px; padding: 12px 14px; color: #fff; display: flex; align-items: center;
+    justify-content: space-between; font-size: 0.66em; line-height: 1.25; text-align: left; }
+  .prin-banner .pb-item { display: flex; align-items: center; gap: 8px; flex: 1; padding: 0 6px; }
+  .prin-banner .pb-item + .pb-item { border-left: 1px solid rgba(255,255,255,0.35); }
+  .prin-banner .pb-icon { width: 58px; height: 58px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .prin-banner .pb-icon--white { background: #fff; border-radius: 4px; padding: 3px; }
+  .prin-banner .pb-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .prin-banner .pb-text strong { display: block; font-weight: 700; font-size: 1.1em; margin-bottom: 1px; white-space: nowrap; }
+  .prin-banner .pb-text span   { font-weight: 400; opacity: 0.9; white-space: nowrap; }
+  .prin-banner .pb-newton { background: #fff; color: var(--c-pnrr-bg); padding: 7px 13px; border-radius: 3px;
+    font-weight: 700; text-align: center; line-height: 1.2; flex-shrink: 0; }
+  .prin-banner .pb-newton strong { font-size: 1.3em; display: block; color: var(--c-primary); }
+  .prin-banner .pb-newton span   { font-size: 0.95em; color: #222; }
+  /* === FILL: canvas-filling, vertically centered content ===
+     Reveal.js writes `display:block` as an INLINE style on every <section> from JS, so putting
+     `display:flex` on the section itself does not work (and forcing it with !important breaks
+     Reveal's own slide hiding). The reliable pattern is an INNER `.fillbox` wrapper. Keep it. */
+  .reveal .slides > section.fill { height: 100%; }
+  .reveal .slides > section.fill > .fillbox {
+    height: 100%; display: flex; flex-direction: column; justify-content: center; }
+  .fillbox > h2 { margin-bottom: 0.6em; }
+  .fill.compact .msg-box { padding: 12px 24px; margin: 7px 0; font-size: 0.79em; }
+  table.cmp { font-size: 0.62em; border-collapse: collapse; margin: 0.4em auto; width: 100%; }
+  table.cmp th, table.cmp td { border: 1px solid var(--c-soft); padding: 8px 10px; vertical-align: middle; }
+  table.cmp th { background: var(--c-primary); color: #fff; text-align: left; font-weight: 600; }
+  table.cmp td.row-label { background: var(--c-bg-soft); font-weight: 600; }
+  table.cmp tr.highlight td { background: #fef3c7; }
+  .two-col { display: flex; gap: 18px; align-items: flex-start; }
+  .two-col > div { flex: 1; min-width: 0; }
+  .two-col svg.figure { width: 100%; height: auto; max-height: 620px; }
+  .msg-box { border-left: 8px solid var(--c-primary); background: #fafafa; padding: 20px 26px; border-radius: 4px;
+    margin: 11px 0; font-size: 0.92em; line-height: 1.4; display: flex; gap: 22px; align-items: center; }
+  .msg-box .msg-num { font-size: 1.6em; font-weight: 800; color: var(--c-primary); line-height: 1; min-width: 1.3em; text-align: center; }
+  .msg-box .msg-body strong { color: var(--c-primary); font-size: 1.12em; display: block; margin-bottom: 4px; }
+  .msg-box--accent { border-left-color: var(--c-accent); }
+  .msg-box--accent .msg-num { color: var(--c-accent); }
+  .msg-box--accent .msg-body strong { color: var(--c-accent); }
+  .takeaway { background: #fef3c7; border-left: 4px solid var(--c-accent); padding: 9px 13px; font-size: 0.78em;
+    margin-top: 0.5em; border-radius: 3px; }
+  .takeaway strong { color: var(--c-accent); }
+  .box { border: 1px solid var(--c-soft); border-radius: 4px; padding: 16px 20px; font-size: 0.85em; background: #fafafa; }
+  .cli { background: #0f172a; color: #e2e8f0; border-radius: 5px; padding: 16px 20px; font-family: "Consolas","Menlo",monospace;
+         font-size: 0.46em; line-height: 1.55; white-space: pre; overflow: hidden; }
+  .cli .c { color: #94a3b8; }
+  .cli .k { color: #5eead4; }
+  .cli .o { color: #fbbf24; }
+  svg.figure { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .reveal section .one-line li { white-space: nowrap; }
+  svg text { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+</style>
+</head>
+<body>
+
+<div class="footer">
+  <span>A. Mayer, S. Salsano</span><span class="sep">|</span>
+  <span>SRv6 Layer 2 Services support</span><span class="sep">|</span>
+  <span>SRv6 Workshop &mdash; Netdev 0x1A, Rome 2026</span>
+</div>
+
+<button id="pdfBtn" title="Open the print-ready layout, then choose Save as PDF (enable Background graphics)" onclick="location.search='print-pdf&autoprint=1'">Save as PDF</button>
+
+<div class="reveal"><div class="slides">
+
+<!-- ===== 1. TITLE ===== -->
+<section class="title-slide center">
+  <div class="logo-strip">
+    <img src="../assets/tor-vergata-logo.png" alt="University of Rome Tor Vergata">
+    <img src="../assets/cnit-logo.png" alt="CNIT">
+  </div>
+  <div><span class="part-banner">SRv6 Workshop @ Netdev 0x1A</span></div>
+  <h1>SRv6 Layer 2 Services support<br><span class="accent">the sr6 device and End.DT2U</span></h1>
+  <div class="authors">
+    <strong>Andrea Mayer</strong><sup>1</sup>, Stefano Salsano<sup>1,2</sup><br>
+    <span class="muted"><sup>1</sup>University of Rome Tor Vergata, Italy &nbsp;&middot;&nbsp; <sup>2</sup>CNIT, Italy</span>
+  </div>
+  <div class="venue">
+    <strong style="color:#222;">Netdev 0x1A &mdash; The Technical Conference on Linux Networking</strong><br>
+    SRv6 Workshop &mdash; <em>13 July 2026, Rome, Italy</em>
+  </div>
+  <div class="ack">Work developed together with Ahmed Abdelsalam and Clarence Filsfils (Cisco Systems)</div>
+  <div class="prin-banner" aria-label="Funded by EU NextGenerationEU - PNRR - PRIN 2022 - NEWTON">
+    <div class="pb-item">
+      <div class="pb-icon">
+        <svg viewBox="0 0 60 60" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+          <rect width="60" height="60" fill="#003399"/>
+          <g fill="#FFCC00">
+            <circle cx="30" cy="10" r="2"/><circle cx="40" cy="13" r="2"/><circle cx="47" cy="20" r="2"/>
+            <circle cx="50" cy="30" r="2"/><circle cx="47" cy="40" r="2"/><circle cx="40" cy="47" r="2"/>
+            <circle cx="30" cy="50" r="2"/><circle cx="20" cy="47" r="2"/><circle cx="13" cy="40" r="2"/>
+            <circle cx="10" cy="30" r="2"/><circle cx="13" cy="20" r="2"/><circle cx="20" cy="13" r="2"/>
+          </g>
+        </svg>
+      </div>
+      <div class="pb-text"><strong>Funded by the European Union</strong><span>NextGenerationEU</span></div>
+    </div>
+    <div class="pb-item">
+      <div class="pb-icon"><img src="../assets/mur-logo.svg" alt="MUR" class="pb-img"></div>
+      <div class="pb-text"><strong>PRIN</strong><span>Ministero dell'Universit&agrave; e della Ricerca</span></div>
+    </div>
+    <div class="pb-item">
+      <div class="pb-icon pb-icon--white"><img src="../assets/italia-domani.svg" alt="Italia Domani" class="pb-img"></div>
+      <div class="pb-text"><strong>Italia Domani</strong><span>National Recovery and Resilience Plan</span></div>
+    </div>
+    <div class="pb-newton"><strong>PRIN 2022</strong><span>NEWTON</span></div>
+  </div>
+</section>
+
+<!-- ===== 2. THREE MESSAGES ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <h2>The story in three messages</h2>
+  <div class="msg-box">
+    <div class="msg-num">1</div>
+    <div class="msg-body"><strong>The gap is in Linux, not in SRv6.</strong>
+      RFC&nbsp;8986 already defines the L2 behaviors &mdash; but Linux has no bridge-facing L2 device like
+      <code>vxlan</code>, so ARP and non-IP never cross the overlay.</div>
+  </div>
+  <div class="msg-box">
+    <div class="msg-num">2</div>
+    <div class="msg-body"><strong>The fix: the <code>sr6</code> device + <code>End.DT2U</code>.</strong>
+      A bridge-integrated Ethernet pseudowire that makes SRv6 L2 overlays
+      <em>operationally equivalent to VXLAN</em> in Linux (for point-to-point).</div>
+  </div>
+  <div class="msg-box msg-box--accent">
+    <div class="msg-num">3</div>
+    <div class="msg-body"><strong>No protocol change &mdash; and a smaller wire than VXLAN.</strong>
+      The L2 service ID rides as a standard SRv6 &micro;SID in the Destination Address:
+      <span class="good">40 B</span> vs 56 B of VXLAN. Landing in RFC&nbsp;v2 before submission.</div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 3. VXLAN REFERENCE ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">The operational reference</span>
+  <h2>VXLAN: the Linux operational reference</h2>
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <p><strong>Why VXLAN works in Linux:</strong></p>
+      <ul class="one-line">
+        <li><strong>Native netdevice</strong> attached to a bridge</li>
+        <li><strong>L2-triggered</strong> encap, not IP-routed</li>
+        <li>All Ethernet crosses &mdash; <span class="accent">ARP included</span></li>
+        <li><strong>24-bit VNI</strong> = the bridge domain</li>
+      </ul>
+      <div class="takeaway" style="margin-top: 1.6em;">
+        <strong>The bar to match.</strong> Direct bridge integration + an explicit L2 service identifier &mdash;
+        the model behind EVPN, Neutron, CloudStack.
+      </div>
+    </div>
+    <div>
+      <svg class="figure" viewBox="0 0 360 340" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#078052"/>
+          </marker>
+        </defs>
+        <g font-size="13" text-anchor="middle">
+          <rect x="120" y="10"  width="120" height="36" rx="6" fill="#f3f4f6" stroke="#6b7280"/>
+          <text x="180" y="33">Host</text>
+          <rect x="100" y="70"  width="160" height="36" rx="6" fill="#d1fae5" stroke="#078052"/>
+          <text x="180" y="93">Linux bridge (br0)</text>
+          <rect x="120" y="130" width="120" height="40" rx="6" fill="#fef3c7" stroke="#d97706"/>
+          <text x="180" y="148" font-weight="700">vxlan dev</text>
+          <text x="180" y="163" font-size="10" fill="#6b7280">VNI = bridge-domain</text>
+          <rect x="60"  y="200" width="240" height="60" rx="6" fill="#fff" stroke="#6b7280" stroke-dasharray="3,3"/>
+          <text x="180" y="220" font-weight="700">IPv6 + UDP + VXLAN + ETH</text>
+          <text x="180" y="240" font-size="11" fill="#6b7280">56 bytes outer overhead</text>
+          <rect x="100" y="275" width="160" height="36" rx="6" fill="#e5e7eb" stroke="#6b7280"/>
+          <text x="180" y="298">IPv6 underlay</text>
+          <line x1="180" y1="46"  x2="180" y2="68"  stroke="#078052" stroke-width="2" marker-end="url(#arr1)"/>
+          <line x1="180" y1="106" x2="180" y2="128" stroke="#078052" stroke-width="2" marker-end="url(#arr1)"/>
+          <line x1="180" y1="170" x2="180" y2="198" stroke="#078052" stroke-width="2" marker-end="url(#arr1)"/>
+          <line x1="180" y1="260" x2="180" y2="273" stroke="#078052" stroke-width="2" marker-end="url(#arr1)"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 4. RFC 8986 ALREADY COVERS L2 ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 1 &mdash; The implementation gap</span>
+  <h2>SRv6 already covers Layer 2 &mdash; architecturally</h2>
+  <table class="cmp">
+    <thead>
+      <tr><th style="width:16%;">Behavior</th><th>What it does (RFC 8986)</th><th style="width:26%;">In Linux today</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="row-label"><code>End.DX2</code></td>
+        <td>Decap &amp; forward the inner Ethernet frame to a <strong>specific outgoing L2 interface</strong></td>
+        <td><span class="good">&#10003; seg6local</span> &mdash; cross-connect only</td>
+      </tr>
+      <tr class="highlight">
+        <td class="row-label"><code>End.DT2U</code></td>
+        <td>Decap &amp; deliver into a <strong>local Ethernet domain</strong>, unicast MAC lookup</td>
+        <td><span class="bad">&#10007;</span> &rarr; <strong>this patch series</strong></td>
+      </tr>
+      <tr>
+        <td class="row-label"><code>End.DT2M</code></td>
+        <td>Decap &amp; <strong>flood</strong> into the L2 domain (BUM traffic)</td>
+        <td><span class="bad">&#10007;</span> &rarr; next step</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="takeaway" style="margin-top: 1.8em;">
+    <strong>A behavior specifies packet processing &mdash; not host integration.</strong>
+    RFC&nbsp;9252 puts EVPN on top of these behaviors; none of them says how the endpoint becomes a
+    <em>netdevice</em> and joins the local Ethernet data plane.
+  </div>
+ </div>
+</section>
+
+<!-- ===== 5. THE IMPLEMENTATION GAP ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <h2>Current Linux SRv6 L2: the implementation gap</h2>
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <p><strong>The behaviors exist &mdash; Linux does not expose them for bridging:</strong></p>
+      <ul class="one-line">
+        <li><span class="bad">&#10007;</span> No native <strong>L2 netdevice</strong> to attach to a bridge</li>
+        <li><span class="bad">&#10007;</span> Encap is <span class="bad">route-based</span> (<code>H.L2.Encaps</code>, IP only)</li>
+        <li><span class="bad">&#10007;</span> <span class="accent">ARP &amp; non-IP</span> never reach the encap point</li>
+        <li><span class="bad">&#10007;</span> No bridge-integrated, transparent L2 service</li>
+      </ul>
+      <div class="takeaway" style="margin-top: 1.6em;">
+        <strong>A Linux gap &mdash; not an SRv6 gap.</strong> The architecture is complete; the bridge-facing wiring is missing.
+      </div>
+    </div>
+    <div>
+      <svg class="figure" viewBox="0 0 360 340" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#b91c1c"/>
+          </marker>
+        </defs>
+        <g font-size="13" text-anchor="middle">
+          <rect x="120" y="10"  width="120" height="36" rx="6" fill="#f3f4f6" stroke="#6b7280"/>
+          <text x="180" y="33">Host</text>
+          <rect x="100" y="70"  width="160" height="36" rx="6" fill="#d1fae5" stroke="#078052"/>
+          <text x="180" y="93">Linux bridge (br0)</text>
+          <text x="180" y="125" font-size="11" fill="#b91c1c" font-weight="700">ARP &amp; non-IP: trapped at L2</text>
+          <rect x="90"  y="140" width="180" height="44" rx="6" fill="#fee2e2" stroke="#b91c1c" stroke-dasharray="3,3"/>
+          <text x="180" y="160" font-weight="700">route-based encap</text>
+          <text x="180" y="176" font-size="10" fill="#6b7280">H.L2.Encaps &mdash; only routed IP</text>
+          <rect x="60"  y="210" width="240" height="60" rx="6" fill="#fff" stroke="#6b7280" stroke-dasharray="3,3"/>
+          <text x="180" y="230" font-weight="700">IPv6 + SRH + ETH</text>
+          <text x="180" y="252" font-size="11" fill="#6b7280">no native L2 dev</text>
+          <rect x="100" y="282" width="160" height="32" rx="6" fill="#e5e7eb" stroke="#6b7280"/>
+          <text x="180" y="303">IPv6 underlay</text>
+          <line x1="180" y1="46"  x2="180" y2="68"  stroke="#078052" stroke-width="2"/>
+          <line x1="180" y1="106" x2="180" y2="138" stroke="#b91c1c" stroke-width="2" marker-end="url(#arr2)"/>
+          <line x1="180" y1="184" x2="180" y2="208" stroke="#b91c1c" stroke-width="2" marker-end="url(#arr2)"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 6. DESIGN CHOICE ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 2 &mdash; Closing the gap</span>
+  <h2>Design choice: close the gap, don't extend SRv6</h2>
+  <svg class="figure" viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#078052"/>
+      </marker>
+      <marker id="arr3r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#b91c1c"/>
+      </marker>
+    </defs>
+    <g font-size="13" text-anchor="middle">
+      <text x="150" y="20" font-weight="700" font-size="15" fill="#6b7280">VXLAN (Linux)</text>
+      <rect x="80"  y="36"  width="140" height="32" rx="6" fill="#f3f4f6" stroke="#6b7280"/>
+      <text x="150" y="57">Host</text>
+      <rect x="80"  y="86"  width="140" height="32" rx="6" fill="#d1fae5" stroke="#078052"/>
+      <text x="150" y="107">Bridge</text>
+      <rect x="80"  y="136" width="140" height="32" rx="6" fill="#fef3c7" stroke="#d97706"/>
+      <text x="150" y="157">vxlan dev</text>
+      <rect x="55"  y="186" width="190" height="40" rx="6" fill="#fff" stroke="#6b7280" stroke-dasharray="3,3"/>
+      <text x="150" y="202" font-size="12">IPv6 + UDP + VXLAN</text>
+      <text x="150" y="218" font-size="10" fill="#6b7280">56 bytes overhead</text>
+      <text x="150" y="252" font-size="11" fill="#047857" font-weight="700">bridge-integrated, VNI-based</text>
+      <line x1="150" y1="68"  x2="150" y2="84"  stroke="#078052" marker-end="url(#arr3)"/>
+      <line x1="150" y1="118" x2="150" y2="134" stroke="#078052" marker-end="url(#arr3)"/>
+      <line x1="150" y1="168" x2="150" y2="184" stroke="#078052" marker-end="url(#arr3)"/>
+
+      <text x="450" y="20" font-weight="700" font-size="15" fill="#b91c1c">SRv6 Linux today</text>
+      <rect x="380" y="36"  width="140" height="32" rx="6" fill="#f3f4f6" stroke="#6b7280"/>
+      <text x="450" y="57">Host</text>
+      <rect x="380" y="86"  width="140" height="32" rx="6" fill="#d1fae5" stroke="#078052"/>
+      <text x="450" y="107">Bridge</text>
+      <rect x="370" y="136" width="160" height="32" rx="6" fill="#fee2e2" stroke="#b91c1c" stroke-dasharray="3,3"/>
+      <text x="450" y="157" font-size="12">route-based encap</text>
+      <rect x="355" y="186" width="190" height="40" rx="6" fill="#fff" stroke="#6b7280" stroke-dasharray="3,3"/>
+      <text x="450" y="202" font-size="12">IPv6 + SRH</text>
+      <text x="450" y="218" font-size="10" fill="#6b7280">no native L2 dev</text>
+      <text x="450" y="252" font-size="11" fill="#b91c1c" font-weight="700">ARP not handled &mdash; the gap</text>
+      <line x1="450" y1="68"  x2="450" y2="84"  stroke="#078052" marker-end="url(#arr3)"/>
+      <line x1="450" y1="118" x2="450" y2="134" stroke="#b91c1c" marker-end="url(#arr3r)"/>
+      <line x1="450" y1="168" x2="450" y2="184" stroke="#b91c1c" marker-end="url(#arr3r)"/>
+
+      <text x="750" y="20" font-weight="700" font-size="15" fill="#078052">SRv6 Linux &mdash; this series</text>
+      <rect x="680" y="36"  width="140" height="32" rx="6" fill="#f3f4f6" stroke="#6b7280"/>
+      <text x="750" y="57">Host</text>
+      <rect x="680" y="86"  width="140" height="32" rx="6" fill="#d1fae5" stroke="#078052"/>
+      <text x="750" y="107">Bridge</text>
+      <rect x="680" y="136" width="140" height="32" rx="6" fill="#fef3c7" stroke="#d97706"/>
+      <text x="750" y="157" font-weight="700">sr6 dev</text>
+      <rect x="655" y="186" width="190" height="40" rx="6" fill="#fff" stroke="#6b7280" stroke-dasharray="3,3"/>
+      <text x="750" y="202" font-size="12">IPv6 (+ SRH today)</text>
+      <text x="750" y="218" font-size="10" fill="#6b7280">&micro;SID: 40 bytes, no SRH</text>
+      <text x="750" y="252" font-size="11" fill="#047857" font-weight="700">sr6 + End.DT2U &mdash; L2 ID as &micro;SID</text>
+      <line x1="750" y1="68"  x2="750" y2="84"  stroke="#078052" marker-end="url(#arr3)"/>
+      <line x1="750" y1="118" x2="750" y2="134" stroke="#078052" marker-end="url(#arr3)"/>
+      <line x1="750" y1="168" x2="750" y2="184" stroke="#078052" marker-end="url(#arr3)"/>
+
+      <text x="450" y="285" font-size="11" fill="#6b7280">the reference &mdash; the gap &mdash; the bridge-integrated SRv6 model</text>
+    </g>
+  </svg>
+  <div class="takeaway">
+    <strong>Two decisions.</strong> (1) Add a native bridge-integrated <code>sr6</code> device + Linux <code>End.DT2U</code>;
+    (2) carry the L2 service ID inside the SRv6 programming model &mdash; <em>no new architectural element</em>.
+  </div>
+ </div>
+</section>
+
+<!-- ===== 7. THE SERIES IN ONE SLIDE ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 3 &mdash; The patch series</span>
+  <h2>The RFC v2 series in one slide</h2>
+  <div class="two-col">
+    <div class="box" style="border-left: 6px solid var(--c-primary);">
+      <strong class="primary">Kernel &mdash; 4 patches</strong>
+      <ul class="one-line" style="margin-top:6px; font-size:0.62em;">
+        <li><code>seg6</code>: SRv6 L2 tunnel device (<code>sr6</code>)</li>
+        <li><code>seg6</code>: SRv6 <code>End.DT2U</code> behavior</li>
+        <li><code>selftests</code>: sr6 + End.DT2U L2 VPN test</li>
+        <li><code>docs</code>: <code>Documentation/networking/sr6.rst</code></li>
+      </ul>
+      <p style="font-size:0.6em; margin-top:8px; line-height:1.45;">
+        <code>CONFIG_IPV6_SR6</code> (module <code>sr6</code>) &middot; depends on <code>IPV6_SEG6_LWTUNNEL</code>,
+        selects <code>DST_CACHE</code> &middot; netlink spec in <code>rt-link.yaml</code>
+      </p>
+    </div>
+    <div class="box" style="border-left: 6px solid var(--c-accent);">
+      <strong class="accent">iproute2 &mdash; 5 patches</strong>
+      <ul class="one-line" style="margin-top:6px; font-size:0.62em;">
+        <li><code>sr6</code> link type &middot; <code>End.DT2U</code> action</li>
+        <li>optional SRH <strong>HMAC</strong> (<code>hmac KEYID</code>)</li>
+        <li>man pages: <code>ip-link</code>, <code>ip-route</code></li>
+      </ul>
+      <p style="font-size:0.6em; margin-top:8px; line-height:1.45;">
+        UAPI: <code>IFLA_SR6_SRH</code>, <code>IFLA_SR6_FIB_TABLE</code> &middot;
+        <code>SEG6_LOCAL_ACTION_END_DT2U</code> (17), <code>SEG6_LOCAL_L2DEV</code>
+      </p>
+    </div>
+  </div>
+  <div class="takeaway" style="margin-top: 1.6em;">
+    <strong>Status.</strong> &micro;SID / reduced encapsulation is the last item in progress &mdash;
+    the series goes to <code>netdev@</code> as soon as it lands.
+  </div>
+ </div>
+</section>
+
+<!-- ===== 8. THE sr6 DEVICE ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 3 &mdash; The patch series</span>
+  <h2>The <code>sr6</code> device: an Ethernet pseudowire netdevice</h2>
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <ul class="one-line">
+        <li>rtnl link type <code>sr6</code> &mdash; <strong>attaches to a bridge</strong></li>
+        <li>Takes L2 frames &rarr; outer IPv6, <code>IPPROTO_ETHERNET</code></li>
+        <li>Segment list &amp; FIB table <strong>immutable</strong> after creation</li>
+        <li>Per-cpu <code>dst_cache</code>, invalidated on l3mdev change</li>
+        <li>No netns move &middot; VLAN only with an explicit <code>table</code></li>
+      </ul>
+      <div class="takeaway" style="margin-top: 1.4em;">
+        <strong>Same role for SRv6</strong> that the <code>vxlan</code> netdevice plays for VXLAN.
+      </div>
+    </div>
+    <div>
+      <svg class="figure" viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg">
+        <g font-size="21">
+          <text x="20" y="30" font-size="22" fill="#6b7280">On the wire (today: SRH-based encap)</text>
+          <rect x="20"  y="50" width="150" height="70" rx="5" fill="#d1fae5" stroke="#078052" stroke-width="2"/>
+          <text x="95"  y="85" text-anchor="middle" font-weight="700" fill="#078052">IPv6 hdr</text>
+          <text x="95"  y="108" text-anchor="middle" font-size="17" fill="#6b7280">40 B</text>
+          <rect x="170" y="50" width="130" height="70" rx="5" fill="#d1fae5" stroke="#078052" stroke-width="2"/>
+          <text x="235" y="85" text-anchor="middle" font-weight="700" fill="#078052">SRH</text>
+          <text x="235" y="108" text-anchor="middle" font-size="17" fill="#6b7280">8 + 16&middot;n</text>
+          <rect x="300" y="50" width="130" height="70" rx="5" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="365" y="85" text-anchor="middle" font-weight="700" fill="#92400e">Eth hdr</text>
+          <text x="365" y="108" text-anchor="middle" font-size="17" fill="#6b7280">14 B</text>
+          <rect x="430" y="50" width="250" height="70" rx="5" fill="#f3f4f6" stroke="#6b7280" stroke-width="2"/>
+          <text x="555" y="85" text-anchor="middle" font-weight="600">inner frame</text>
+          <text x="555" y="108" text-anchor="middle" font-size="17" fill="#6b7280">IP / ARP / any</text>
+
+          <text x="20" y="165" font-size="20" fill="#6b7280">outer encap &mdash; the inner L2 frame is carried unchanged</text>
+
+          <rect x="20" y="195" width="660" height="70" rx="6" fill="#fafafa" stroke="#e5e7eb" stroke-width="2"/>
+          <text x="350" y="238" text-anchor="middle" font-size="22" font-weight="700" fill="#111">
+            overhead = 40 + (8 + 16&middot;n) = 48 + 16&middot;n
+          </text>
+
+          <rect x="20" y="300" width="660" height="72" rx="6" fill="#ecfdf5" stroke="#047857" stroke-width="2"/>
+          <text x="350" y="330" text-anchor="middle" font-size="21" font-weight="700" fill="#047857">
+            &micro;SID / reduced encap: no SRH &rarr; 40 B
+          </text>
+          <text x="350" y="358" text-anchor="middle" font-size="19" fill="#047857">
+            in progress &mdash; lands in RFC v2 before submission
+          </text>
+        </g>
+      </svg>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 9. End.DT2U ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 3 &mdash; The patch series</span>
+  <h2><code>End.DT2U</code> in <code>seg6local</code></h2>
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <ul class="one-line">
+        <li>New action <strong>17</strong> + attribute <code>SEG6_LOCAL_L2DEV</code></li>
+        <li>Decap <code>IPPROTO_ETHERNET</code> &rarr; <code>netif_rx()</code> on <code>l2dev</code></li>
+        <li><code>l2dev</code> = <strong>bridge port</strong> or another <code>sr6</code> device</li>
+        <li>Enforced at <code>build_state</code>, with a proper <code>extack</code></li>
+        <li>The bridge does MAC learning &mdash; that is the <strong>U</strong> in DT2U</li>
+      </ul>
+      <div class="takeaway" style="margin-top: 1.4em;">
+        <strong>The frame re-enters a valid L2 context.</strong> Restricting <code>l2dev</code> is what keeps
+        true Ethernet-overlay semantics.
+      </div>
+    </div>
+    <div>
+      <div class="cli"><span class="c">/* RFC 8986 requires L2 forwarding semantics.</span>
+<span class="c"> * Only bridge ports and sr6 devices satisfy it. */</span>
+<span class="k">static bool</span> seg6_is_valid_l2dev(<span class="k">const struct</span> net_device *dev)
+{
+    <span class="k">return</span> netif_is_bridge_port(dev) || netif_is_sr6(dev);
+}</div>
+      <div class="box" style="margin-top: 16px; font-size: 0.6em; border-left: 6px solid var(--c-bad);">
+        <strong class="bad">The subtle one</strong>
+        <p style="font-size:0.95em; margin-top:6px; line-height:1.45;">
+          <code>skb_scrub_packet()</code> must run <strong>before</strong> <code>eth_type_trans()</code>.
+          Scrubbing afterwards resets <code>pkt_type</code> to <code>PACKET_HOST</code> &mdash; and
+          multicast / broadcast silently break on the bridge.
+        </p>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 10. END-TO-END OPERATION ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <h2 style="margin-bottom: 0.35em;">End-to-end operation</h2>
+  <svg class="figure" viewBox="0 60 1040 290" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#078052"/>
+      </marker>
+    </defs>
+    <g font-size="24" text-anchor="middle">
+      <text x="500" y="96"  font-size="19" fill="#6b7280">today: SRH carries the segment list &nbsp;&middot;&nbsp; roadmap: &micro;SIDs in the DA, no SRH</text>
+      <text x="500" y="122" font-size="20" font-weight="700" fill="#078052">outer DA = locator + behavior + L2 service ID</text>
+      <line x1="500" y1="128" x2="500" y2="139" stroke="#078052" stroke-width="1.5"/>
+
+      <rect x="20"  y="140" width="95"  height="60" rx="6" fill="#f3f4f6" stroke="#6b7280"/>
+      <text x="67"  y="178">Host&nbsp;1</text>
+      <rect x="135" y="140" width="105" height="60" rx="6" fill="#d1fae5" stroke="#078052"/>
+      <text x="187" y="167">Bridge</text>
+      <text x="187" y="191" font-size="17" fill="#6b7280">br0</text>
+      <rect x="260" y="140" width="115" height="60" rx="6" fill="#fef3c7" stroke="#d97706"/>
+      <text x="317" y="167" font-weight="700">sr6 dev</text>
+      <text x="317" y="191" font-size="17" fill="#6b7280">encap</text>
+      <rect x="400" y="132" width="200" height="76" rx="8" fill="#fff" stroke="#078052" stroke-width="2"/>
+      <text x="500" y="161" font-weight="700">SRv6 network</text>
+      <text x="500" y="183" font-size="16" fill="#6b7280">plain IPv6 underlay</text>
+      <text x="500" y="201" font-size="16" fill="#6b7280">transit does a DA lookup</text>
+      <rect x="625" y="140" width="130" height="60" rx="6" fill="#fef3c7" stroke="#d97706"/>
+      <text x="690" y="167" font-weight="700">End.DT2U</text>
+      <text x="690" y="191" font-size="17" fill="#6b7280">decap</text>
+      <rect x="780" y="140" width="105" height="60" rx="6" fill="#d1fae5" stroke="#078052"/>
+      <text x="832" y="167">Bridge</text>
+      <text x="832" y="191" font-size="17" fill="#6b7280">br0</text>
+      <rect x="905" y="140" width="95"  height="60" rx="6" fill="#f3f4f6" stroke="#6b7280"/>
+      <text x="952" y="178">Host&nbsp;2</text>
+
+      <line x1="115" y1="170" x2="133" y2="170" stroke="#078052" stroke-width="2" marker-end="url(#arr4)"/>
+      <line x1="240" y1="170" x2="258" y2="170" stroke="#078052" stroke-width="2" marker-end="url(#arr4)"/>
+      <line x1="375" y1="170" x2="398" y2="170" stroke="#078052" stroke-width="2" marker-end="url(#arr4)"/>
+      <line x1="600" y1="170" x2="623" y2="170" stroke="#078052" stroke-width="2" marker-end="url(#arr4)"/>
+      <line x1="755" y1="170" x2="778" y2="170" stroke="#078052" stroke-width="2" marker-end="url(#arr4)"/>
+      <line x1="885" y1="170" x2="903" y2="170" stroke="#078052" stroke-width="2" marker-end="url(#arr4)"/>
+
+      <text x="520" y="252" font-size="22" fill="#374151">
+        Encap is triggered by <tspan font-weight="700" fill="#047857">L2 forwarding</tspan>, not IP routing
+      </text>
+      <text x="520" y="284" font-size="22" fill="#374151">
+        &rArr; <tspan font-weight="700" fill="#047857">all</tspan> Ethernet crosses the overlay: IPv4, IPv6, <tspan font-weight="700" fill="#d97706">ARP</tspan>, non-IP
+      </text>
+      <text x="520" y="330" font-size="22" fill="#374151">
+        On egress, <tspan font-family="monospace" font-weight="700">l2dev</tspan> = bridge port or another sr6 device
+      </text>
+    </g>
+  </svg>
+  <div class="takeaway" style="margin-top: 1.2em;">
+    <strong>Operationally equivalent to VXLAN at the Linux level.</strong>
+    The host-facing interface and the <code>sr6</code> device are members of the same bridge; ordinary L2 forwarding does the rest.
+  </div>
+ </div>
+</section>
+
+<!-- ===== 11. ARP & NON-IP ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <h2>ARP &amp; non-IP: why it is a <em>true</em> Ethernet overlay</h2>
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <p><strong>Route-based encap</strong> only sees packets on the IP routing path:</p>
+      <ul class="one-line">
+        <li><span class="bad">&#10007;</span> ARP is handled at L2 &mdash; <span class="bad">never encapsulated</span></li>
+        <li><span class="bad">&#10007;</span> non-IP protocols are dropped from the overlay</li>
+      </ul>
+      <p style="margin-top:0.5em;"><strong>Bridge-integrated <code>sr6</code></strong> &mdash; ARP follows the path of any frame:</p>
+      <ul class="one-line">
+        <li><span class="good">&#10003;</span> flooded / forwarded by ordinary L2 logic</li>
+        <li><span class="good">&#10003;</span> reaches <code>sr6</code> &rarr; encapsulated into the underlay</li>
+        <li><span class="good">&#10003;</span> remote <code>End.DT2U</code> delivers it into the L2 domain</li>
+      </ul>
+    </div>
+    <div class="box" style="border-left: 6px solid var(--c-accent);">
+      <strong class="accent">Why it matters</strong>
+      <p style="font-size:0.85em; margin-top:8px; line-height:1.45;">
+        A transparent Ethernet service requires <em>broadcast / unknown-unicast / multicast</em> and address
+        resolution to cross the overlay &mdash; exactly what a routed-IP tunnel cannot do.
+      </p>
+    </div>
+  </div>
+  <div class="takeaway" style="margin-top: 1.8em;">
+    <strong>The datapath is driven by L2 forwarding, not by IP-route interception.</strong>
+    That is what turns a tunnel into a genuine Ethernet overlay.
+  </div>
+ </div>
+</section>
+
+<!-- ===== 12. POST-ENCAP LOOKUP ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 4 &mdash; Kernel details that matter</span>
+  <h2>Post-encap routing: four lookup modes</h2>
+  <table class="cmp">
+    <thead>
+      <tr><th style="width:18%;">Mode</th><th style="width:18%;">VRF context</th><th style="width:18%;"><code>sr6</code> table</th><th>Where the SID route must live</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="row-label">plain</td><td>no</td><td>&mdash;</td><td><code>main</code> &mdash; resolved through fib rules</td></tr>
+      <tr><td class="row-label">VRF</td><td>yes</td><td>&mdash;</td><td>the <strong>VRF table</strong> &mdash; blackhole in main prevents leaking</td></tr>
+      <tr><td class="row-label">table</td><td>no</td><td>X</td><td>table <strong>X</strong> &mdash; direct lookup, <span class="accent">fib rules bypassed</span></td></tr>
+      <tr class="highlight"><td class="row-label">VRF + table</td><td>yes</td><td>X</td><td>table <strong>X</strong> &mdash; the explicit table <strong>wins</strong> over the VRF</td></tr>
+    </tbody>
+  </table>
+  <div class="takeaway" style="margin-top: 1.6em;">
+    <strong>All four are exercised by the selftest.</strong> The <code>dst_cache</code> is per-cpu and is invalidated
+    automatically when the l3mdev context changes &mdash; a bridge can be moved in and out of a VRF at runtime.
+  </div>
+ </div>
+</section>
+
+<!-- ===== 13. CONFIGURATION ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Part 4 &mdash; Kernel details that matter</span>
+  <h2>Configuration in practice</h2>
+  <div class="cli"><span class="c"># ingress PE — create the pseudowire and put it on the bridge</span>
+ip link add sr6-0 <span class="k">type sr6</span> segs fcff:2::d20
+ip link set sr6-0 up
+ip link set sr6-0 master br0        <span class="c"># same bridge as the host-facing port</span>
+
+<span class="c"># multi-hop path with an explicit FIB table</span>
+ip link add sr6-1 <span class="k">type sr6</span> segs fcff:3::e,fcff:2::d20 <span class="o">table</span> 200
+
+<span class="c"># egress PE — the local SID that terminates the L2 VPN</span>
+ip -6 route add fcff:1::d20 table 90 \
+    encap seg6local <span class="k">action End.DT2U</span> <span class="o">l2dev</span> sr6-0 dev dum0</div>
+  <div class="takeaway" style="margin-top: 1.6em;">
+    <strong>No new userspace model.</strong> <code>sr6</code> is an ordinary link type,
+    <code>End.DT2U</code> is an ordinary <code>seg6local</code> action &mdash; both documented in the
+    <code>ip-link</code> and <code>ip-route</code> man pages of the series.
+  </div>
+ </div>
+</section>
+
+<!-- ===== 14. BEYOND BRIDGING ===== -->
+<section class="fill compact">
+ <div class="fillbox">
+  <h2>Beyond bridging: standalone, VRF, IRB</h2>
+  <div class="msg-box">
+    <div class="msg-num">&#9679;</div>
+    <div class="msg-body"><strong>Standalone.</strong> No bridge: IP addresses go directly on <code>sr6</code> &mdash;
+      a point-to-point L3 interface over the L2 tunnel. <code>End.DT2U</code> already accepts an <code>sr6</code> as <code>l2dev</code>,
+      so the remote SID does not change.</div>
+  </div>
+  <div class="msg-box">
+    <div class="msg-num">&#9679;</div>
+    <div class="msg-body"><strong>VRF.</strong> Enslave the bridge to a VRF: <code>sr6</code> inherits the routing context and
+      performs the route lookup for the encapsulated packet in the VRF table &mdash; per-service routing domains, for free.</div>
+  </div>
+  <div class="msg-box msg-box--accent">
+    <div class="msg-num">&#9733;</div>
+    <div class="msg-body"><strong>IRB (Integrated Routing and Bridging).</strong> Give the bridge an address inside the VRF: the PE becomes
+      the L3 gateway of the overlay and routes to other subnets <em>without leaving the box</em>.</div>
+  </div>
+  <div class="takeaway" style="margin-top: 1em;">
+    <strong>All three documented</strong> in <code>Documentation/networking/sr6.rst</code>, with full configurations.
+  </div>
+ </div>
+</section>
+
+<!-- ===== 15. SELFTEST ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Prototype validation</span>
+  <h2><code>srv6_sr6_l2vpn_test.sh</code>: the full datapath, exercised</h2>
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <ul class="one-line">
+        <li><strong>4 SRv6 routers</strong>, full-mesh IPv6 underlay</li>
+        <li>One host each: bridge + <code>sr6</code> as a bridge port</li>
+        <li><strong>2 independent L2 VPNs</strong> &mdash; cross-VPN isolation checked</li>
+        <li>Segment lists of <strong>1, 2 and 3 SIDs</strong> (transit <code>End</code>)</li>
+        <li>A different <strong>lookup mode per router</strong> &mdash; all four</li>
+        <li>Blackhole routes prove the right table is used</li>
+        <li>Checks host&harr;host, host&harr;remote gw, router&harr;router</li>
+      </ul>
+      <div class="takeaway" style="margin-top: 1.2em;">
+        <strong>ARP crossing the VPN is the proof</strong> &mdash; the datapath is driven by bridge L2 forwarding,
+        not by IP-route interception.
+      </div>
+    </div>
+    <div>
+      <svg class="figure" viewBox="0 0 420 320" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#078052"/>
+          </marker>
+        </defs>
+        <g font-size="12" text-anchor="middle">
+          <rect x="20"  y="20"  width="90" height="34" rx="6" fill="#f3f4f6" stroke="#6b7280"/>
+          <text x="65"  y="41">Host A</text>
+          <rect x="20"  y="78"  width="90" height="34" rx="6" fill="#d1fae5" stroke="#078052"/>
+          <text x="65"  y="99">bridge</text>
+          <rect x="20"  y="136" width="90" height="34" rx="6" fill="#fef3c7" stroke="#d97706"/>
+          <text x="65"  y="157" font-weight="700">sr6</text>
+          <text x="65"  y="190" font-size="11" fill="#6b7280">rt-1 &mdash; plain</text>
+          <line x1="65" y1="54"  x2="65" y2="76"  stroke="#078052" stroke-width="2" marker-end="url(#arr5)"/>
+          <line x1="65" y1="112" x2="65" y2="134" stroke="#078052" stroke-width="2" marker-end="url(#arr5)"/>
+
+          <rect x="150" y="120" width="120" height="50" rx="8" fill="#fff" stroke="#078052" stroke-width="2"/>
+          <text x="210" y="142" font-weight="700" fill="#078052">IPv6</text>
+          <text x="210" y="159" font-size="11" fill="#6b7280">underlay (mesh)</text>
+          <line x1="110" y1="150" x2="148" y2="148" stroke="#078052" stroke-width="2" marker-end="url(#arr5)"/>
+          <line x1="272" y1="148" x2="308" y2="150" stroke="#078052" stroke-width="2" marker-end="url(#arr5)"/>
+
+          <rect x="310" y="20"  width="90" height="34" rx="6" fill="#f3f4f6" stroke="#6b7280"/>
+          <text x="355" y="41">Host B</text>
+          <rect x="310" y="78"  width="90" height="34" rx="6" fill="#d1fae5" stroke="#078052"/>
+          <text x="355" y="99">bridge</text>
+          <rect x="310" y="136" width="90" height="34" rx="6" fill="#fef3c7" stroke="#d97706"/>
+          <text x="355" y="157" font-weight="700">sr6</text>
+          <text x="355" y="190" font-size="11" fill="#6b7280">rt-2 &mdash; VRF</text>
+          <line x1="355" y1="134" x2="355" y2="112" stroke="#078052" stroke-width="2" marker-end="url(#arr5)"/>
+          <line x1="355" y1="76"  x2="355" y2="54"  stroke="#078052" stroke-width="2" marker-end="url(#arr5)"/>
+
+          <text x="210" y="225" font-size="12" fill="#047857" font-weight="700">2 L2 VPNs over 4 routers</text>
+          <text x="210" y="248" font-size="11" fill="#6b7280">rt-3: table &nbsp;&middot;&nbsp; rt-4: VRF + table</text>
+          <text x="210" y="270" font-size="11" fill="#6b7280">1 / 2 / 3-SID paths, transit End</text>
+          <text x="210" y="298" font-size="11" fill="#b91c1c" font-weight="700">cross-VPN traffic must NOT pass</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 16. WIRE FORMAT ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <h2>Wire format: smaller than VXLAN, plain IPv6 on the wire</h2>
+  <table class="cmp">
+    <thead>
+      <tr><th style="width:34%;">Stack (IPv6 underlay)</th><th>Header chain</th><th style="width:22%;">Outer overhead</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="row-label">VXLAN over IPv6</td><td>IPv6 + UDP + VXLAN + ETH</td><td>56 bytes</td></tr>
+      <tr><td class="row-label">SRv6 L2 &mdash; RFC v2 branch today</td><td>IPv6 + SRH + ETH</td><td>64 bytes (1 SID)</td></tr>
+      <tr class="highlight"><td class="row-label">SRv6 L2 &mdash; &micro;SID / reduced <span class="accent">(landing in RFC v2)</span></td><td>IPv6 + ETH &mdash; <strong>no SRH</strong></td><td><span class="good">40 bytes</span></td></tr>
+    </tbody>
+  </table>
+  <div class="takeaway" style="margin-top: 1.6em;">
+    <strong>The L2 service ID is just one more &micro;SID in the same Destination Address.</strong>
+    16 bytes saved per packet against VXLAN, transit nodes do an ordinary IPv6 DA lookup &mdash; and the overlay
+    crosses <em>any</em> IPv6 underlay. No SRv6 protocol change, no architectural extension.
+  </div>
+ </div>
+</section>
+
+<!-- ===== 17. WHAT'S NEXT / WHAT WE ASK ===== -->
+<section class="fill compact">
+ <div class="fillbox">
+  <span class="part-banner">Part 5 &mdash; What comes next</span>
+  <h2>What is missing &mdash; and what we ask of this room</h2>
+  <div class="msg-box">
+    <div class="msg-num">1</div>
+    <div class="msg-body"><strong><code>End.DT2M</code>: multipoint services.</strong> BUM replication and split-horizon are the steps from
+      point-to-point pseudowires to a real E-LAN service.</div>
+  </div>
+  <div class="msg-box">
+    <div class="msg-num">2</div>
+    <div class="msg-body"><strong>Control plane.</strong> EVPN over SRv6 (RFC 9252) in FRR &mdash; SID allocation and MAC/IP
+      advertisement on top of the datapath we are landing now.</div>
+  </div>
+  <div class="msg-box">
+    <div class="msg-num">3</div>
+    <div class="msg-body"><strong>Consumers.</strong> Replacing VXLAN where it actually runs: Kubernetes CNIs, OVN,
+      OpenStack Neutron &mdash; they all want a bridge-facing device, and now there is one.</div>
+  </div>
+  <div class="msg-box msg-box--accent">
+    <div class="msg-num">4</div>
+    <div class="msg-body"><strong>Performance.</strong> Systematic evaluation against VXLAN &mdash; and your review of the
+      datapath before the series hits the list.</div>
+  </div>
+ </div>
+</section>
+
+<!-- ===== 18. CONCLUSIONS ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <h2>Conclusions</h2>
+  <div class="two-col">
+    <div class="box" style="border-left: 6px solid var(--c-primary);">
+      <strong class="primary">Contribution</strong>
+      <p style="font-size:0.88em; margin-top:8px; line-height:1.45;">
+        <code>sr6</code> + <code>End.DT2U</code> close the Linux gap: bridge-integrated, ARP-capable,
+        <strong>VXLAN-equivalent</strong> SRv6 L2 overlays. 4 kernel + 5 iproute2 patches, with selftest and documentation.
+      </p>
+    </div>
+    <div class="box" style="border-left: 6px solid var(--c-accent);">
+      <strong class="accent">Next</strong>
+      <p style="font-size:0.88em; margin-top:8px; line-height:1.45;">
+        &micro;SID / reduced encapsulation (40 B, no SRH), then <strong>RFC v2 to <code>netdev@</code></strong>.
+        After that: <code>End.DT2M</code>, EVPN over SRv6, cloud orchestrators.
+      </p>
+    </div>
+  </div>
+  <div class="takeaway" style="margin-top: 1.6em;">
+    <strong>Take-home.</strong> SRv6 Layer-2 services are realizable in Linux <em>today</em> &mdash;
+    the architecture was never the problem, the netdevice was.
+  </div>
+  <p style="text-align:center; margin-top:1.2em; font-size:0.6em; line-height:1.6;">
+    <span class="primary"><strong>Review welcome, before it hits the list:</strong></span><br>
+    <code>github.com/netgroup/srv6-linux-kernel-dev</code> &nbsp;&rarr;&nbsp; <code>seg6_sr6_L2encap_rfc-v2</code><br>
+    <code>github.com/netgroup/srv6-linux-iproute2-dev</code> &nbsp;&rarr;&nbsp; <code>seg6_sr6_L2encap_UAPI-v2</code>
+  </p>
+  <p style="text-align:center; margin-top:0.6em; font-size:0.58em; color:var(--c-muted);">
+    <code>andrea.mayer@uniroma2.it</code> &nbsp;&middot;&nbsp; <code>stefano.salsano@uniroma2.it</code>
+  </p>
+ </div>
+</section>
+
+<!-- ===== BACKUP: micro-SID primer ===== -->
+<section class="fill">
+ <div class="fillbox">
+  <span class="part-banner">Backup</span>
+  <h2>SRv6 micro-SIDs in one slide</h2>
+  <p style="text-align:center; margin:0 0 0.4em;">
+    <strong>One 128-bit IPv6 destination address</strong> carries a locator
+    <strong>plus a sequence of compact instructions</strong> &mdash; no SRH needed.
+  </p>
+  <svg class="figure" viewBox="0 0 1500 500" xmlns="http://www.w3.org/2000/svg" style="max-height: 560px;">
+    <defs>
+      <marker id="usidArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#078052"/>
+      </marker>
+    </defs>
+    <g>
+      <text x="60"  y="34" font-size="30" fill="#6b7280">Encapsulated packet</text>
+      <rect x="60"  y="50" width="140" height="72" fill="#f3f4f6" stroke="#6b7280"/>
+      <text x="130" y="97" font-size="34" text-anchor="middle">MAC</text>
+      <rect x="200" y="50" width="900" height="72" fill="#d1fae5" stroke="#078052" stroke-width="2"/>
+      <text x="650" y="82" font-size="32" text-anchor="middle" font-weight="700" fill="#078052">IPv6 header</text>
+      <text x="650" y="111" font-size="28" text-anchor="middle" fill="#078052" font-family="Consolas, monospace">DA = 2001:db8:a:b::5300:a001:b005:c004</text>
+      <rect x="1100" y="50" width="270" height="72" fill="#f3f4f6" stroke="#6b7280"/>
+      <text x="1235" y="95" font-size="23" text-anchor="middle">payload (inner ETH)</text>
+      <text x="1385" y="97" font-size="28" fill="#b91c1c" font-weight="700">no SRH</text>
+
+      <line x1="650" y1="124" x2="650" y2="158" stroke="#078052" stroke-width="2" marker-end="url(#usidArr)"/>
+      <text x="678" y="150" font-size="24" fill="#6b7280">expand the DA</text>
+
+      <text x="60"  y="198" font-size="30" fill="#6b7280">Inside the destination address (128 bits)</text>
+      <rect x="60"  y="212" width="540" height="120" fill="#d1fae5" stroke="#078052" stroke-width="2"/>
+      <text x="330" y="254" font-size="32" text-anchor="middle" font-weight="700" fill="#078052">LOCATOR</text>
+      <text x="330" y="290" font-size="28" text-anchor="middle" font-family="Consolas, monospace">2001:db8:a:b</text>
+      <text x="330" y="318" font-size="22" text-anchor="middle" fill="#6b7280">routes the packet to the SRv6 node</text>
+
+      <rect x="600" y="212" width="160" height="120" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+      <text x="680" y="254" font-size="28" text-anchor="middle" font-weight="700" fill="#d97706">&micro;SID 1</text>
+      <text x="680" y="290" font-size="28" text-anchor="middle" font-family="Consolas, monospace">5300</text>
+      <text x="680" y="318" font-size="21" text-anchor="middle" fill="#6b7280">behavior</text>
+
+      <rect x="760" y="212" width="160" height="120" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+      <text x="840" y="254" font-size="28" text-anchor="middle" font-weight="700" fill="#d97706">&micro;SID 2</text>
+      <text x="840" y="290" font-size="28" text-anchor="middle" font-family="Consolas, monospace">a001</text>
+      <text x="840" y="318" font-size="21" text-anchor="middle" fill="#6b7280">instruction</text>
+
+      <rect x="920" y="212" width="160" height="120" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+      <text x="1000" y="254" font-size="28" text-anchor="middle" font-weight="700" fill="#d97706">&micro;SID 3</text>
+      <text x="1000" y="290" font-size="28" text-anchor="middle" font-family="Consolas, monospace">b005</text>
+      <text x="1000" y="318" font-size="21" text-anchor="middle" fill="#6b7280">instruction</text>
+
+      <rect x="1080" y="212" width="160" height="120" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+      <text x="1160" y="254" font-size="28" text-anchor="middle" font-weight="700" fill="#d97706">&micro;SID 4</text>
+      <text x="1160" y="290" font-size="28" text-anchor="middle" font-family="Consolas, monospace">c004</text>
+      <text x="1160" y="318" font-size="21" text-anchor="middle" fill="#6b7280">L2 service ID</text>
+
+      <rect x="1240" y="212" width="200" height="120" fill="#fff" stroke="#6b7280" stroke-dasharray="3,3"/>
+      <text x="1340" y="268" font-size="21" text-anchor="middle" fill="#6b7280">end-of-container</text>
+      <text x="1340" y="296" font-size="19" text-anchor="middle" fill="#6b7280">(zero padding)</text>
+
+      <text x="750" y="386" font-size="28" text-anchor="middle" fill="#111">
+        Each SRv6 hop <tspan font-weight="700" fill="#078052">consumes the leftmost &micro;SID</tspan> and shifts the next instruction left.
+      </text>
+      <text x="750" y="420" font-size="22" text-anchor="middle" fill="#6b7280" font-family="Consolas, monospace">
+        2001:db8:a:b::5300:a001:b005:c004 &rarr; 2001:db8:a:b::a001:b005:c004:0 &rarr; ...
+      </text>
+      <rect x="60" y="440" width="1380" height="46" fill="#ecfdf5" stroke="#047857" rx="3"/>
+      <text x="750" y="471" font-size="23" text-anchor="middle" fill="#047857" font-weight="700">
+        One DA holds many instructions &mdash; no SRH, smaller overhead, plain IPv6 lookup at every transit hop.
+      </text>
+    </g>
+  </svg>
+ </div>
+</section>
+
+</div></div>
+
+<script src="../assets/reveal/reveal.js"></script>
+<script src="../assets/reveal/plugin/notes/notes.js"></script>
+<script>
+  Reveal.initialize({
+    width: 1600,
+    height: 900,
+    margin: 0.04,
+    center: true,
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'fade',
+    plugins: [ RevealNotes ]
+  });
+
+  function updateChrome() {
+    var first = Reveal.getIndices().h === 0;
+    var b = document.getElementById('pdfBtn'); if (b) b.style.display = first ? 'block' : 'none';
+    var sn = document.querySelector('.reveal .slide-number'); if (sn) sn.style.display = first ? 'none' : 'block';
+  }
+  if (!/print-pdf/.test(location.search)) { updateChrome(); Reveal.on('slidechanged', updateChrome); }
+
+  if (/autoprint/.test(location.search)) { setTimeout(function () { window.print(); }, 1500); }
+</script>
+</body>
+</html>
