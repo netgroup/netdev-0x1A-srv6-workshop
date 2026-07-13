@@ -85,10 +85,21 @@
   /* === FILL: canvas-filling, vertically centered content ===
      Reveal.js writes `display:block` as an INLINE style on every <section> from JS, so putting
      `display:flex` on the section itself does not work (and forcing it with !important breaks
-     Reveal's own slide hiding). The reliable pattern is an INNER `.fillbox` wrapper. Keep it. */
-  .reveal .slides > section.fill { height: 100%; }
-  .reveal .slides > section.fill > .fillbox {
+     Reveal's own slide hiding). The reliable pattern is an INNER `.fillbox` wrapper. Keep it.
+     NOTE 2: do NOT anchor these rules to `.slides > section` — in print-pdf mode Reveal moves every
+     section inside a `.pdf-page` wrapper, the child selector stops matching and the PDF layout breaks. */
+  .reveal section.fill { height: 100%; }
+  .reveal section.fill > .fillbox {
     height: 100%; display: flex; flex-direction: column; justify-content: center; }
+  /* In print-pdf mode Reveal wraps each section in a `.pdf-page` and does the layout itself:
+     the 100%-height flex column fights it and the content ends up pushed off the page.
+     Turn `fill` off for printing — Reveal centres the slide on the page on its own. */
+  html.reveal-print .reveal section.fill,
+  html.reveal-print .reveal section.fill > .fillbox { height: auto !important; display: block !important; }
+  @media print {
+    .reveal section.fill,
+    .reveal section.fill > .fillbox { height: auto !important; display: block !important; }
+  }
   .fillbox > h2 { margin-bottom: 0.6em; }
   .fill.compact .msg-box { padding: 12px 24px; margin: 7px 0; font-size: 0.79em; }
   table.cmp { font-size: 0.62em; border-collapse: collapse; margin: 0.4em auto; width: 100%; }
