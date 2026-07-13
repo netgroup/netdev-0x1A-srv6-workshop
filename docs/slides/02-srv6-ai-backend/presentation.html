@@ -489,6 +489,10 @@ ip -6 route add fc00:d::/64 \
   }
   if (!/print-pdf/.test(location.search)) { updateChrome(); Reveal.on('slidechanged', updateChrome); }
 
+  // Chrome derives the suggested PDF file name from document.title: swap it while printing,
+  // so "Save as PDF" proposes a clean, unique name instead of the human-readable deck title.
+  if (/print-pdf/.test(location.search)) { document.title = 'netdev-0x1A-srv6-ai-backend'; }
+
   if (/autoprint/.test(location.search)) { setTimeout(function () { window.print(); }, 1500); }
 </script>
 </body>
