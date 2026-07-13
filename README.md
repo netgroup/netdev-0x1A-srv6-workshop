@@ -5,11 +5,11 @@
 **https://netgroup.github.io/netdev-0x1A-srv6-workshop/**
 
 - Workshop Introduction — interactive: <https://netgroup.github.io/netdev-0x1A-srv6-workshop/slides/01-workshop-intro/presentation.html>
-- Workshop Introduction — PDF: <https://netgroup.github.io/netdev-0x1A-srv6-workshop/slides/01-workshop-intro/presentation.pdf>
+- Workshop Introduction — PDF: <https://netgroup.github.io/netdev-0x1A-srv6-workshop/slides/01-workshop-intro/netdev-0x1A-workshop-intro.pdf>
 - SRv6 for the AI Backend — interactive: <https://netgroup.github.io/netdev-0x1A-srv6-workshop/slides/02-srv6-ai-backend/presentation.html>
-- SRv6 for the AI Backend — PDF: <https://netgroup.github.io/netdev-0x1A-srv6-workshop/slides/02-srv6-ai-backend/presentation.pdf>
+- SRv6 for the AI Backend — PDF: <https://netgroup.github.io/netdev-0x1A-srv6-workshop/slides/02-srv6-ai-backend/netdev-0x1A-srv6-ai-backend.pdf>
 - SRv6 Layer 2 Services support — interactive: <https://netgroup.github.io/netdev-0x1A-srv6-workshop/slides/03-srv6-l2-services/presentation.html>
-- SRv6 Layer 2 Services support — PDF: <https://netgroup.github.io/netdev-0x1A-srv6-workshop/slides/03-srv6-l2-services/presentation.pdf>
+- SRv6 Layer 2 Services support — PDF: <https://netgroup.github.io/netdev-0x1A-srv6-workshop/slides/03-srv6-l2-services/netdev-0x1A-srv6-l2-services.pdf>
 
 GitHub Pages is served from branch `main`, folder `/docs`
 (Settings → Pages → Deploy from a branch → `main` / `docs`).
@@ -73,7 +73,14 @@ Slides for the other talks will be added as the speakers provide them.
 2. On the title slide, click **Save as PDF** (bottom right). The deck reloads in
    `?print-pdf&autoprint=1` and the print dialog opens by itself.
 3. In the dialog: destination **Save as PDF**, enable **Background graphics**, margins **None**.
-4. Save as `presentation.pdf` next to the corresponding `presentation.html`.
+4. Save it next to the corresponding `presentation.html`, using the deck's own file name
+   (do **not** call them all `presentation.pdf` — Chrome would pile up `presentation (1).pdf`, …):
+
+   | Deck | PDF file name |
+   |---|---|
+   | `01-workshop-intro/` | `netdev-0x1A-workshop-intro.pdf` |
+   | `02-srv6-ai-backend/` | `netdev-0x1A-srv6-ai-backend.pdf` |
+   | `03-srv6-l2-services/` | `netdev-0x1A-srv6-l2-services.pdf` |
 
 Result: landscape PDF, one slide per page.
 
